@@ -74,7 +74,3 @@ Dimentionality_Reduction_AcademicProfiles_TMP/
    ```
 2. Run **`01_PCA_Analysis.ipynb`** for EDA, standardization, 2D/3D PCA, and cluster profiling.
 3. Run **`02_tSNE_Analysis.ipynb`** for t-SNE tuning, UMAP comparison, and PCA vs. t-SNE benchmarking.
-4. *(Optional)* Regenerate the presentation deck and high-resolution charts:
-   ```bash
-   python generate_presentation.py
-   ```
