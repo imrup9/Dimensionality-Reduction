@@ -4,7 +4,6 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Jupyter](https://img.shields.io/badge/Notebooks-Jupyter%20%7C%20Colab-orange.svg?logo=jupyter&logoColor=white)](https://jupyter.org/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-v1.2%2B-F7931E.svg?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ---
@@ -95,8 +94,7 @@ The analysis operates on `student_grades.csv`, comprising $N = 100$ student reco
 
 | Column | Academic Domain | Distribution Summary ($\mu \pm \sigma$) | Min / Max | Domain Role |
 | :--- | :--- | :--- | :--- | :--- |
-| `student_id` | Metadata | Continuous ID ($1 
-ightarrow 100$) | $1$ / $100$ | Unique record identifier (excluded from modeling). |
+| student_id | Metadata | Continuous ID ( \rightarrow 100$) | $ / $ | Unique record identifier (excluded from modeling). |
 | `math` | STEM | $54.21 \pm 15.65$ | $23$ / $94$ | Quantitative and analytical core aptitude. |
 | `science` | STEM | $54.83 \pm 15.14$ | $24$ / $91$ | Empirical inquiry and technical reasoning. |
 | `cs` | STEM | $54.19 \pm 15.08$ | $24$ / $93$ | Algorithmic logic and computational thinking. |
@@ -108,12 +106,11 @@ ightarrow 100$) | $1$ / $100$ | Unique record identifier (excluded from modeling
 
 ### 2. The Mathematical Necessity of Standardization ($Z$-Score)
 In raw format, variance across subjects is highly unequal:
-$$\text{Var}(\text{spanish}) = 338.2 \quad \text{vs.} \quad \text{Var}(\text{band}) = 40.1 \quad \left(rac{\sigma^2_{\text{spanish}}}{\sigma^2_{\text{band}}} pprox 8.44
-ight)$$
+$$\text{Var}(\text{spanish}) = 338.2 \quad \text{vs.} \quad \text{Var}(\text{band}) = 40.1 \quad \left(\frac{\sigma^2_{\text{spanish}}}{\sigma^2_{\text{band}}} \approx 8.44 \right)$$
 
 Because PCA seeks orthogonal directions maximizing sample variance $\mathbf{w}^T \mathbf{S} \mathbf{w}$, features with artificially larger numerical variances dominate the principal eigenvectors regardless of whether their variance is pedagogically informative. To prevent humanities grades from dominating the linear projection, each feature vector is centered and scaled to unit variance:
 
-$$z_{ij} = rac{x_{ij} - \mu_j}{\sigma_j}, \quad \text{where } \mu_j = rac{1}{N}\sum_{i=1}^N x_{ij}, \quad \sigma_j = \sqrt{rac{1}{N}\sum_{i=1}^N (x_{ij} - \mu_j)^2}$$
+$$z_{ij} = \frac{x_{ij} - \mu_j}{\sigma_j}, \quad \text{where } \mu_j = \frac{1}{N}\sum_{i=1}^N x_{ij}, \quad \sigma_j = \sqrt{\frac{1}{N}\sum_{i=1}^N (x_{ij} - \mu_j)^2}$$
 
 Post-transformation, all 8 features satisfy $\mathbb{E}[Z_j] = 0$ and $\text{Var}(Z_j) = 1.0$.
 
@@ -122,12 +119,12 @@ Post-transformation, all 8 features satisfy $\mathbb{E}[Z_j] = 0$ and $\text{Var
 ## 🔬 Mathematical Methodology
 
 ### 1. Linear Dimensionality Reduction: Principal Component Analysis (PCA)
-PCA computes the spectral decomposition of the empirical correlation matrix $\mathbf{R} = rac{1}{N} \mathbf{Z}^T \mathbf{Z} \in \mathbb{R}^{8 \times 8}$:
+PCA computes the spectral decomposition of the empirical correlation matrix $\mathbf{R} = \frac{1}{N} \mathbf{Z}^T \mathbf{Z} \in \mathbb{R}^{8 \times 8}$:
 
 $$\mathbf{R} \mathbf{v}_k = \lambda_k \mathbf{v}_k, \quad \text{subject to } \|\mathbf{v}_k\|_2 = 1, \quad \lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_8 \ge 0$$
 
 - **Explained Variance Ratio ($EVR$):**
-  $$\text{EVR}_k = rac{\lambda_k}{\sum_{j=1}^8 \lambda_j}$$
+  $$\text{EVR}_k = \frac{\lambda_k}{\sum_{j=1}^8 \lambda_j}$$
 - **Principal Component Scores:**
   $$\mathbf{Y} = \mathbf{Z} \mathbf{V}_d \in \mathbb{R}^{N \times d}, \quad d \in \{2, 3\}$$
 
@@ -135,18 +132,15 @@ $$\mathbf{R} \mathbf{v}_k = \lambda_k \mathbf{v}_k, \quad \text{subject to } \|\
 While PCA preserves global variance, it assumes a linear subspace and struggles to resolve complex non-linear cluster boundaries in 2D. t-SNE maps high-dimensional affinities $p_{j|i}$ to low-dimensional Student-t affinities $q_{ij}$:
 
 1. **High-Dimensional Joint Probabilities:**
-   $$p_{j|i} = rac{\exp(-\|\mathbf{z}_i - \mathbf{z}_j\|^2 / 2\sigma_i^2)}{\sum_{k 
-e i} \exp(-\|\mathbf{z}_i - \mathbf{z}_k\|^2 / 2\sigma_i^2)}, \quad p_{ij} = rac{p_{j|i} + p_{i|j}}{2N}$$
+   $$p_{j|i} = \frac{\exp(-\|\mathbf{z}_i - \mathbf{z}_j\|^2 / 2\sigma_i^2)}{\sum_{k \neq i} \exp(-\|\mathbf{z}_i - \mathbf{z}_k\|^2 / 2\sigma_i^2)}, \quad p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}$$
    where bandwidth $\sigma_i$ is determined by the target **Perplexity**:
    $$\text{Perp}(P_i) = 2^{H(P_i)} = 2^{-\sum_j p_{j|i} \log_2 p_{j|i}}$$
 
 2. **Low-Dimensional Heavy-Tailed Cauchy Probabilities:**
-   $$q_{ij} = rac{(1 + \|\mathbf{y}_i - \mathbf{y}_j\|^2)^{-1}}{\sum_{k} \sum_{l 
-e k} (1 + \|\mathbf{y}_k - \mathbf{y}_l\|^2)^{-1}}$$
+   $$q_{ij} = \frac{(1 + \|\mathbf{y}_i - \mathbf{y}_j\|^2)^{-1}}{\sum_{k} \sum_{l \neq k} (1 + \|\mathbf{y}_k - \mathbf{y}_l\|^2)^{-1}}$$
 
 3. **Loss Function Optimization (Kullback-Leibler Divergence):**
-   $$\mathcal{L} = \text{KL}(P \parallel Q) = \sum_{i=1}^N \sum_{j 
-e i} p_{ij} \log rac{p_{ij}}{q_{ij}}$$
+   $$\mathcal{L} = \text{KL}(P \parallel Q) = \sum_{i=1}^N \sum_{j \neq i} p_{ij} \log \frac{p_{ij}}{q_{ij}}$$
    Optimized via gradient descent with momentum and adaptive learning rates.
 
 ---
@@ -154,8 +148,7 @@ e i} p_{ij} \log rac{p_{ij}}{q_{ij}}$$
 ## 📈 Empirical Results & Decomposition Analysis
 
 ### 1. PCA Explained Variance & Scree Profile
-Dimensionality reduction from $\mathbb{R}^8 
-ightarrow \mathbb{R}^3$ retains **$96.00\%$** of the total information content:
+Dimensionality reduction from $\mathbb{R}^8 \rightarrow \mathbb{R}^3$ retains **$96.00\%$** of the total information content:
 
 | Component | Eigenvalue ($\lambda_k$) | % Variance Explained | Cumulative Variance (%) | Kaiser-Guttman ($\lambda > 1$) |
 | :---: | :---: | :---: | :---: | :---: |
@@ -182,7 +175,7 @@ The eigenvector matrix $\mathbf{V}_{8 \times 3}$ yields crisp, intuitive pedagog
 | `spanish` | $+0.406$ | $-0.040$ | **$-0.411$** | General aptitude contributor; negative pole on PC3 (Humanities). |
 | `physed` | $+0.047$ | **$+0.702$** | $-0.031$ | Near-zero on PC1; completely defines PC2 along with Band. |
 
-- **PC1 (65.2%): General Academic Aptitude.** Equal positive loadings ($pprox +0.41$) across all 6 core subjects (`math`, `science`, `cs`, `english`, `history`, `spanish`), with zero contribution from electives.
+- **PC1 (65.2%): General Academic Aptitude.** Equal positive loadings ($\approx +0.41$) across all 6 core subjects (`math`, `science`, `cs`, `english`, `history`, `spanish`), with zero contribution from electives.
 - **PC2 (22.6%): Elective / Extracurricular Engagement.** Solely driven by `band` ($+0.706$) and `physed` ($+0.702$). Orthogonal to academic test performance.
 - **PC3 (8.2%): Disciplinary Orientation (STEM vs. Humanities).** Contrasts STEM disciplines ($+0.38 \text{ to } +0.44$) against Humanities disciplines ($-0.40 \text{ to } -0.41$).
 
@@ -192,7 +185,7 @@ The eigenvector matrix $\mathbf{V}_{8 \times 3}$ yields crisp, intuitive pedagog
 To guarantee reproducible and robust manifold embeddings, we conducted a systematic grid search across **Perplexity** and **Learning Rate**:
 
 #### Perplexity Sweep ($\text{Learning Rate} = \text{"auto"}$, $\text{Iterations} = 1000$):
-| Perplexity | Effective Neighborhood ($K pprox 3 \times \text{Perp}$) | KL Divergence | 2D Silhouette Score | Observation |
+| Perplexity | Effective Neighborhood ($K \approx 3 \times \text{Perp}$) | KL Divergence | 2D Silhouette Score | Observation |
 | :---: | :---: | :---: | :---: | :--- |
 | $5$ | $\sim 15$ | $0.3494$ | $0.4886$ | Over-focuses on micro-clusters; artificial fragmentation of classes. |
 | $15$ | $\sim 45$ | $0.3037$ | **$0.5088$** | Strong local grouping; slight boundary distortion. |
@@ -214,7 +207,7 @@ To guarantee reproducible and robust manifold embeddings, we conducted a systema
 
 We evaluate cluster separation by computing the **Silhouette Score** ($s \in [-1, 1]$) on the 2D projected coordinates against the ground-truth $k$-Means academic clusters ($k=4$):
 
-$$s_i = rac{b(i) - a(i)}{\max(a(i), b(i))}, \quad ar{s} = rac{1}{N}\sum_{i=1}^N s_i$$
+$$s_i = \frac{b(i) - a(i)}{\max(a(i), b(i))}, \quad \bar{s} = \frac{1}{N}\sum_{i=1}^N s_i$$
 
 | Dimensionality Reduction Technique | Latent Dimensions | 2D Silhouette Score | Relative Improvement | Primary Strength |
 | :--- | :---: | :---: | :---: | :--- |
@@ -342,5 +335,3 @@ If you utilize this workflow, methodology, or dataset structure in educational r
 
 ---
 
-## 📄 License
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details. Free for academic, personal, and commercial research.
