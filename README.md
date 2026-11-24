@@ -22,8 +22,9 @@ This project applies unsupervised **Linear Dimensionality Reduction (PCA)** and 
 Dimentionality_Reduction_AcademicProfiles_TMP/
 ├── README.md                              # Project overview & key findings
 ├── student_grades.csv                     # Original dataset (100 students x 8 subjects)
-├── 01_PCA_Analysis.ipynb                  # EDA, Standardization, 2D/3D PCA & Component Loadings
-├── 02_tSNE_Analysis.ipynb                 # t-SNE Perplexity/LR Tuning, UMAP & PCA Benchmarking
+├── 01_EDA.ipynb                           # Exploratory Data Analysis & Domain Collinearity Audit
+├── 02_PCA_Analysis.ipynb                  # Standardization, 2D/3D PCA & Component Loadings
+├── 03_tSNE_Analysis.ipynb                 # t-SNE Perplexity/LR Tuning, UMAP & PCA Benchmarking
 ├── generate_presentation.py               # Script to build the .pptx deck & export charts
 ├── Academic_Profiles_Presentation.pptx    # Final executive pitch deck
 └── images/                                # High-resolution visualizations exported for reporting
@@ -72,7 +73,8 @@ Dimentionality_Reduction_AcademicProfiles_TMP/
    ```bash
    pip install pandas numpy scikit-learn matplotlib seaborn plotly umap-learn python-pptx
    ```
-2. Run **`01_PCA_Analysis.ipynb`** for EDA, standardization, 2D/3D PCA, and cluster profiling.
-3. Run **`02_tSNE_Analysis.ipynb`** for t-SNE tuning, UMAP comparison, and PCA vs. t-SNE benchmarking.
+2. Run **`01_EDA.ipynb`** for exploratory data analysis, domain collinearity, and distribution checks.
+3. Run **`02_PCA_Analysis.ipynb`** for standardization, 2D/3D PCA, and cluster profiling.
+4. Run **`03_tSNE_Analysis.ipynb`** for t-SNE tuning, UMAP comparison, and PCA vs. t-SNE benchmarking.
 
 
