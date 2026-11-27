@@ -31,7 +31,7 @@ Our pipeline isolates **three fundamental academic axes**, segments students int
 | **Variance Retention (3D PCA)** | **$96.00\%$** ($\text{PC1}=65.20\%$, $\text{PC2}=22.59\%$, $\text{PC3}=8.21\%$) | Compresses an 8-variable gradebook into 3 orthogonal axes with $\le 4\%$ information loss. |
 | **Collinear Blocks** | $r_{\text{STEM}} \ge 0.97$, $r_{\text{Humanities}} \ge 0.96$ | Proves student performance clusters into domain blocks rather than isolated subjects. |
 | **Domain Orthogonality** | $r(\text{Core Academics}, \text{Electives}) \in [-0.04, +0.13]$ | Demonstrates elective aptitude is completely independent of core intellectual performance. |
-| **Manifold Separation Benchmark** | **t-SNE Silhouette: $0.499$** vs. **2D PCA: $0.433$** | Non-linear t-SNE provides $+15.2\%$ better boundary separation for targeted student cohorting. |
+| **Manifold Separation Benchmark** | **t-SNE Silhouette: $0.4852$** vs. **2D PCA: $0.4333$** | Non-linear t-SNE ($\text{Perp}=20$, $\text{LR}=\text{"auto"}$) provides $+12.0\%$ better boundary separation for targeted student cohorting. |
 | **Optimal Hyperparameters** | $\text{Perplexity} = 20$, $\text{Learning Rate} = \text{"auto"}$ ($\text{KL} = 0.2709$) | Achieves the optimal balance between preserving local student neighborhoods and global clusters. |
 | **Institutional Archetypes** | **4 Distinct Profiles** identified via $k$-Means ($k=4$) | Empowers institutions to deploy personalized interventions rather than generic blanket policies. |
 
@@ -66,7 +66,7 @@ flowchart TD
         F3 --> H["Unsupervised Segmentation: K-Means (k=4)"]
         G3 --> I["Quantitative Validation: Silhouette Score Benchmarking"]
         H --> I
-        I --> J["t-SNE (0.499) > PCA 2D (0.433) > PCA PC1vPC3 (0.278)"]
+        I --> J["t-SNE (0.4852) > PCA 2D (0.4333) > PCA PC1vPC3 (0.2781)"]
     end
 
     subgraph Actionable_Outcomes ["Phase 4: Policy & Advising Strategy"]

@@ -248,9 +248,14 @@ def run_clustering_model(x_matrix, algo, params):
 
 
 def build_cluster_names(df_proc, labels, features):
-    """Assign human-readable cluster names based on mean feature z-scores."""
+    """Assign human-readable cluster names based on domain or feature z-scores."""
     global_means = df_proc[features].mean()
     global_stds = df_proc[features].std().replace(0, 1)
+    stem_cols = [c for c in ("math", "science", "cs") if c in features]
+    hum_cols = [c for c in ("english", "history", "spanish") if c in features]
+    elec_cols = [c for c in ("band", "physed") if c in features]
+    has_academic_domains = len(stem_cols) >= 2 and len(hum_cols) >= 2 and len(elec_cols) >= 1
+
     names = {}
     for cid in sorted(np.unique(labels)):
         if cid == -1:
@@ -258,16 +263,72 @@ def build_cluster_names(df_proc, labels, features):
             continue
         sub = df_proc.loc[labels == cid, features]
         z_diff = (sub.mean() - global_means) / global_stds
-        top_feat = z_diff.idxmax()
-        overall_z = z_diff.mean()
-        if overall_z >= 0.75:
-            tag = "High Performers"
-        elif overall_z <= -0.55:
-            tag = "At-Risk / Low"
+        if has_academic_domains:
+            core_z = z_diff[stem_cols + hum_cols].mean()
+            stem_z = z_diff[stem_cols].mean()
+            hum_z = z_diff[hum_cols].mean()
+            elec_z = z_diff[elec_cols].mean()
+            if core_z >= 0.75:
+                tag = "High-Achieving All-Rounder"
+            elif core_z <= -0.45:
+                tag = "At-Risk"
+            elif hum_z > stem_z and elec_z >= 0.35:
+                tag = "Humanities & Electives"
+            elif hum_z > stem_z:
+                tag = "Humanities-Focused"
+            elif stem_z > hum_z and elec_z >= 0.35:
+                tag = "STEM & Electives"
+            elif stem_z > hum_z:
+                tag = "STEM-Focused"
+            else:
+                tag = f"{z_diff.idxmax().capitalize()}-Oriented"
         else:
-            tag = f"{top_feat.capitalize()}-Oriented"
+            top_feat = z_diff.idxmax()
+            overall_z = z_diff.mean()
+            if overall_z >= 0.75:
+                tag = "High Performers"
+            elif overall_z <= -0.55:
+                tag = "At-Risk / Low"
+            else:
+                tag = f"{top_feat.capitalize()}-Oriented"
         names[cid] = f"Cluster {cid}: {tag}"
     return names
+
+
+PROFILE_PLAYBOOK = {
+    "At-Risk": {
+        "summary": "Students struggling across core STEM and Humanities subjects, while average Elective scores can hide their risk in a simple overall GPA.",
+        "strategies": [
+            "Assign foundational tutoring in Math, Science, and English writing labs.",
+            "Set up bi-weekly progress and attendance check-ins with an academic advisor.",
+            "Balance extracurricular load until core subject scores recover above 60.",
+        ],
+    },
+    "Humanities-Focused": {
+        "summary": "Students with strong verbal and historical literacy (English, History, Spanish) and moderate STEM performance, with lower elective focus.",
+        "strategies": [
+            "Provide academic advising toward liberal arts, communications, law, or social sciences.",
+            "Offer applied 'STEM for Humanities' workshops (e.g., data storytelling, practical statistics).",
+            "Pair quantitative concepts with writing or real-world case studies to build STEM confidence.",
+        ],
+    },
+    "Humanities & Electives": {
+        "summary": "Well-rounded communicators who combine strong Humanities scores with the highest engagement in Band and Physical Education.",
+        "strategies": [
+            "Channel music and athletics leadership into peer-mentorship and student leadership roles.",
+            "Provide flexible deadline windows during peak performance or athletic competition weeks.",
+            "Encourage interdisciplinary projects linking arts/athletics with core academics.",
+        ],
+    },
+    "High-Achieving All-Rounder": {
+        "summary": "Top-performing students excelling consistently across every core STEM and Humanities subject.",
+        "strategies": [
+            "Offer Advanced Placement (AP), honors, or dual-enrollment college coursework.",
+            "Recruit as peer tutors or study-group mentors to support At-Risk classmates.",
+            "Provide independent research, Olympiad, or capstone project opportunities.",
+        ],
+    },
+}
 
 
 def generate_ai_insights(df_proc, labels, cluster_names, features, algo, sil, dbi):
@@ -297,16 +358,40 @@ def generate_ai_insights(df_proc, labels, cluster_names, features, algo, sil, db
         pct = cnt / n_total * 100
         sub_means = df_proc.loc[mask, features].mean()
         z_diff = ((sub_means - global_means) / global_stds).sort_values(ascending=False)
-        strengths = [f"{f.upper()} (+{z_diff[f]:.2f}\u03c3)" for f in z_diff.head(2).index if z_diff[f] > 0.1]
-        weaknesses = [f"{f.upper()} ({z_diff[f]:.2f}\u03c3)" for f in z_diff.tail(2).index if z_diff[f] < -0.1]
+        strengths = [f"{f.upper()} (avg {sub_means[f]:.1f}, +{z_diff[f]:.2f}\u03c3)" for f in z_diff.head(3).index if z_diff[f] > 0.1]
+        weaknesses = [f"{f.upper()} (avg {sub_means[f]:.1f}, {z_diff[f]:.2f}\u03c3)" for f in z_diff.tail(3).index if z_diff[f] < -0.1]
+
+        cname = cluster_names[cid]
+        tag = cname.split(": ", 1)[1] if ": " in cname else cname
+        playbook = PROFILE_PLAYBOOK.get(tag)
+        if playbook:
+            summary_txt = playbook["summary"]
+            strategies = playbook["strategies"]
+        elif cid == -1:
+            summary_txt = "Records that sit far from dense groups and were flagged as potential outliers."
+            strategies = [
+                "Review these individual records manually for data entry errors or unique edge cases.",
+                "Adjust DBSCAN neighborhood radius (eps) in Step 4 if too many points are marked as noise.",
+            ]
+        else:
+            top_pos = z_diff.index[0].upper()
+            top_neg = z_diff.index[-1].upper()
+            summary_txt = f"Group characterized by relatively higher {top_pos} and lower {top_neg} compared to the dataset average."
+            strategies = [
+                f"Leverage strength in {top_pos} as a benchmark or peer-sharing anchor.",
+                f"Target targeted support or review on {top_neg} where this group trails the cohort mean.",
+            ]
+
         cluster_cards.append(
             {
                 "cid": cid,
-                "name": cluster_names[cid],
+                "name": cname,
                 "count": cnt,
                 "pct": pct,
+                "summary": summary_txt,
                 "strengths": strengths or ["Balanced near cohort average"],
                 "weaknesses": weaknesses or ["No major below-average deficits"],
+                "strategies": strategies,
                 "mean_overall": float(sub_means.mean()),
             }
         )
@@ -571,6 +656,33 @@ st.markdown(
 
     #MainMenu, footer, [data-testid="stDecoration"] {{ display: none !important; }}
 
+    /* Top Streamlit header bar & toolbar (prevents black bar in Light Mode) */
+    header[data-testid="stHeader"] {{
+        background-color: var(--bg-root) !important;
+        color: var(--text-primary) !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+    }}
+    header[data-testid="stHeader"] button,
+    header[data-testid="stHeader"] a,
+    header[data-testid="stHeader"] svg,
+    [data-testid="stToolbar"] button,
+    [data-testid="stToolbar"] svg {{
+        color: var(--text-primary) !important;
+        fill: currentColor !important;
+    }}
+
+    /* Inline code / algorithm badges (prevents black pills in Light Mode) */
+    code, .stMarkdown code, section[data-testid="stSidebar"] code {{
+        background-color: var(--accent-muted) !important;
+        color: var(--accent) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 6px !important;
+        padding: 2px 8px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.86rem !important;
+        font-weight: 600 !important;
+    }}
+
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {{
         background-color: var(--bg-root) !important;
         color: var(--text-primary) !important;
@@ -582,17 +694,25 @@ st.markdown(
         background-color: var(--bg-sidebar) !important;
         border-right: 1px solid var(--border-subtle) !important;
     }}
-    section[data-testid="stSidebar"] * {{
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label {{
         color: var(--text-primary) !important;
+    }}
+    section[data-testid="stSidebar"] [data-testid="stRadio"] label p {{
+        font-size: 0.96rem !important;
+        font-weight: 500 !important;
+        line-height: 1.45 !important;
     }}
     section[data-testid="stSidebar"] .stCaption,
     section[data-testid="stSidebar"] small {{
         color: var(--text-muted) !important;
+        font-size: 0.84rem !important;
     }}
 
     .block-container {{
-        max-width: 1220px !important;
-        padding: 1.6rem 2rem 3.5rem 2rem !important;
+        max-width: 1320px !important;
+        padding: 1.25rem 1.8rem 2.75rem 1.8rem !important;
     }}
 
     @keyframes fadeSlideUp {{
@@ -645,9 +765,10 @@ st.markdown(
         transform: translateY(-2px);
     }}
     .bento-label {{
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.82rem;
-        letter-spacing: 0.06em;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.84rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
         color: var(--text-muted);
         margin-bottom: 0.4rem;
@@ -657,19 +778,19 @@ st.markdown(
     }}
     .bento-num {{
         font-family: 'DotGothic16', monospace;
-        font-size: 2.2rem;
+        font-size: 2.25rem;
         line-height: 1.1;
         color: var(--text-primary);
     }}
     .bento-meta {{
-        font-size: 0.9rem;
+        font-size: 0.96rem;
         color: var(--text-secondary);
-        margin-top: 0.35rem;
-        line-height: 1.45;
+        margin-top: 0.4rem;
+        line-height: 1.55;
     }}
     .dot-ind {{
-        width: 9px;
-        height: 9px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         display: inline-block;
         flex-shrink: 0;
@@ -685,21 +806,21 @@ st.markdown(
         background: var(--bg-surface);
         border: 1px solid var(--border-subtle);
         border-radius: 12px;
-        padding: 12px 15px;
+        padding: 13px 16px;
         display: flex;
         align-items: flex-start;
         gap: 10px;
         box-shadow: var(--card-shadow);
     }}
     .legend-title {{
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.88rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.98rem;
         font-weight: 600;
         color: var(--text-primary);
         margin-bottom: 2px;
     }}
     .legend-desc {{
-        font-size: 0.86rem;
+        font-size: 0.92rem;
         color: var(--text-secondary);
         line-height: 1.45;
     }}
@@ -714,11 +835,11 @@ st.markdown(
 
     .sec-title {{
         font-family: 'DotGothic16', monospace;
-        font-size: 1.18rem;
+        font-size: 1.24rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--text-primary);
-        margin: 0.75rem 0;
+        margin: 1rem 0 0.75rem 0;
     }}
     .hairline {{
         height: 1px;
@@ -730,24 +851,23 @@ st.markdown(
     .breadcrumb-bar {{
         display: flex;
         align-items: center;
-        gap: 4px;
-        margin-bottom: 1.2rem;
+        gap: 6px;
+        margin-bottom: 1.1rem;
         flex-wrap: wrap;
-        padding: 10px 0;
+        padding: 6px 0;
     }}
     .breadcrumb-step {{
         display: inline-flex;
         align-items: center;
-        gap: 5px;
-        padding: 5px 12px;
+        gap: 6px;
+        padding: 6px 12px;
         border-radius: 8px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.03em;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 500;
         color: {T['breadcrumb_inactive']};
         background: transparent;
         transition: all 0.2s ease;
-        text-transform: uppercase;
         white-space: nowrap;
     }}
     .breadcrumb-step.active {{
@@ -760,7 +880,7 @@ st.markdown(
     }}
     .breadcrumb-sep {{
         color: {T['breadcrumb_inactive']};
-        font-size: 0.7rem;
+        font-size: 0.85rem;
         margin: 0 1px;
     }}
 
@@ -874,13 +994,31 @@ st.markdown(
 
     /* Tabs */
     [data-testid="stTabs"] button {{
-        color: var(--text-muted) !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-size: 0.88rem !important;
+        color: var(--text-secondary) !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.96rem !important;
+        font-weight: 500 !important;
+        padding: 8px 16px !important;
+        border-radius: 8px 8px 0 0 !important;
+    }}
+    [data-testid="stTabs"] button:hover {{
+        color: var(--text-primary) !important;
+        background-color: var(--accent-muted) !important;
     }}
     [data-testid="stTabs"] button[aria-selected="true"] {{
         color: var(--accent) !important;
+        font-weight: 600 !important;
         border-bottom-color: var(--accent) !important;
+    }}
+
+    /* Alerts & Info boxes */
+    [data-testid="stAlert"] {{
+        border-radius: 10px !important;
+        color: var(--text-primary) !important;
+    }}
+    [data-testid="stAlert"] p {{
+        color: var(--text-primary) !important;
+        font-size: 0.95rem !important;
     }}
 
     /* Expander */
@@ -1529,164 +1667,206 @@ elif st.session_state.stage_idx == 4:
     tab_manifold, tab_compare, tab_sim = st.tabs(["Manifold Explorer", "Cluster Comparison & Profiles", "What-If Simulator"])
 
     with tab_manifold:
-        m_col, s_col = st.columns([2.4, 1], gap="large")
-        with m_col:
-            alg_opts = ["PCA (Linear)", "t-SNE (Non-Linear)"] + (["UMAP (Manifold)"] if HAS_UMAP else [])
-            v1, v2, v3 = st.columns([1.2, 1.2, 0.9])
-            with v1:
-                proj_idx = alg_opts.index(st.session_state.projection_method) if st.session_state.projection_method in alg_opts else 0
-                emb_method = st.selectbox(
-                    "Projection",
-                    alg_opts,
-                    index=proj_idx,
-                    help="PCA: fast, preserves global variance. t-SNE: reveals local neighborhoods. UMAP: balances global and local structure." if st.session_state.expert_mode else "Choose how to display your data. PCA is simplest and fastest. t-SNE shows tighter groups.",
-                )
-                if emb_method != st.session_state.projection_method:
-                    st.session_state.projection_method = emb_method
-                    st.rerun()
-            with v2:
-                color_opt = st.selectbox(
-                    "Color By",
-                    ["Cluster"] + feats,
-                    help="Color the data points by their cluster assignment or by a specific feature value.",
-                )
-            with v3:
-                dims = st.selectbox(
-                    "Dimensions",
-                    ["2D Plane", "3D Space"],
-                    help="2D is easier to read; 3D lets you rotate and explore an extra dimension.",
+        alg_opts = ["PCA (Linear)", "t-SNE (Non-Linear)"] + (["UMAP (Manifold)"] if HAS_UMAP else [])
+        v1, v2, v3 = st.columns([1.2, 1.2, 0.9])
+        with v1:
+            proj_idx = alg_opts.index(st.session_state.projection_method) if st.session_state.projection_method in alg_opts else 0
+            emb_method = st.selectbox(
+                "Projection",
+                alg_opts,
+                index=proj_idx,
+                help="PCA: fast, preserves global variance. t-SNE: reveals local neighborhoods. UMAP: balances global and local structure." if st.session_state.expert_mode else "Choose how to display your data. PCA is simplest and fastest. t-SNE shows tighter groups.",
+            )
+            if emb_method != st.session_state.projection_method:
+                st.session_state.projection_method = emb_method
+                st.rerun()
+        with v2:
+            color_opt = st.selectbox(
+                "Color By",
+                ["Cluster"] + feats,
+                help="Color the data points by their cluster assignment or by a specific feature value.",
+            )
+        with v3:
+            dims = st.selectbox(
+                "Dimensions",
+                ["2D Plane", "3D Space"],
+                help="2D is easier to read; 3D lets you rotate and explore an extra dimension.",
+            )
+
+        n_comp = 3 if dims == "3D Space" else 2
+        perp, lr_c, u_nb, u_md = 20, "auto", 15, 0.1
+        if st.session_state.expert_mode:
+            if emb_method == "t-SNE (Non-Linear)":
+                tc1, tc2 = st.columns(2)
+                perp = tc1.slider("Perplexity", 5, 45, 20, 5, help="Controls how many neighbors each point considers. Lower = more local focus, higher = more global view.")
+                lr_c = tc2.selectbox("Learning Rate", ["auto", "50", "200"], help="How fast the algorithm converges. 'auto' works well in most cases.")
+            elif emb_method == "UMAP (Manifold)":
+                uc1, uc2 = st.columns(2)
+                u_nb = uc1.slider("n_neighbors", 5, 45, 15, 5, help="Number of neighbors to consider. More neighbors = more global structure preserved.")
+                u_md = uc2.slider("min_dist", 0.05, 0.50, 0.10, 0.05, help="How tightly points are packed. Smaller = tighter clusters in the visualization.")
+
+        if st.session_state.expert_mode:
+            active_clusters = st.multiselect(
+                "Filter Visible Clusters",
+                options=list(color_map.keys()),
+                default=list(color_map.keys()),
+                help="Show or hide specific clusters from the chart.",
+            )
+        else:
+            active_clusters = list(color_map.keys())
+
+        with st.spinner("Rendering projection..."):
+            coords, axes_lbls, trust_val, loadings = compute_embedding(
+                x_mat, emb_method, n_comp, perp, lr_c, u_nb, u_md
+            )
+
+        # Contextual Metrics Strip (Full-Width 4-Col Row Above Chart)
+        sil_disp = f"{st.session_state.sil_score:.3f}" if st.session_state.sil_score is not None else "N/A"
+        dbi_disp = f"{st.session_state.dbi_score:.3f}" if st.session_state.dbi_score is not None else "N/A"
+        non_noise_mask = labels != -1
+        if len(np.unique(labels[non_noise_mask])) >= 2 and int(non_noise_mask.sum()) > len(np.unique(labels[non_noise_mask])):
+            proj_sil_val = float(silhouette_score(coords[non_noise_mask], labels[non_noise_mask]))
+            proj_sil_disp = f"{proj_sil_val:.3f}"
+        else:
+            proj_sil_disp = "N/A"
+
+        algo_cfg = f"{st.session_state.algo_used} ({', '.join(f'{k}={v}' for k, v in st.session_state.algo_params.items())})"
+        if emb_method == "PCA (Linear)":
+            proj_cfg = f"PCA ({dims})"
+        elif emb_method == "t-SNE (Non-Linear)":
+            proj_cfg = f"t-SNE ({dims}, Perp={perp}, LR={lr_c})"
+        else:
+            proj_cfg = f"UMAP ({dims}, k={u_nb}, min_dist={u_md})"
+        scale_cfg = st.session_state.scaling_method.split()[0]
+
+        mc1, mc2, mc3, mc4 = st.columns(4)
+        metric_cards = [
+            (mc1, f"CLUSTERING SILHOUETTE ({len(feats)}D)", sil_disp, f"{scale_cfg} · {algo_cfg}"),
+            (mc2, f"PROJECTION SILHOUETTE ({dims.split()[0]})", proj_sil_disp, proj_cfg),
+            (mc3, f"DAVIES-BOULDIN ({len(feats)}D)", dbi_disp, f"Lower = tighter ({algo_cfg})"),
+            (mc4, "TRUSTWORTHINESS", f"{trust_val:.3f}", f"{proj_cfg} vs. {len(feats)}D"),
+        ]
+        for col, mlbl, mval, msub in metric_cards:
+            with col:
+                st.markdown(
+                    f'<div class="bento" style="padding:0.95rem 1.1rem;"><div class="bento-label">{mlbl}</div><div class="bento-num" style="font-size:1.85rem;">{mval}</div><div class="bento-meta" style="font-size:0.84rem;">{msub}</div></div>',
+                    unsafe_allow_html=True,
                 )
 
-            n_comp = 3 if dims == "3D Space" else 2
-            perp, lr_c, u_nb, u_md = 20, "auto", 15, 0.1
-            if st.session_state.expert_mode:
-                if emb_method == "t-SNE (Non-Linear)":
-                    tc1, tc2 = st.columns(2)
-                    perp = tc1.slider("Perplexity", 5, 45, 20, 5, help="Controls how many neighbors each point considers. Lower = more local focus, higher = more global view.")
-                    lr_c = tc2.selectbox("Learning Rate", ["auto", "50", "200"], help="How fast the algorithm converges. 'auto' works well in most cases.")
-                elif emb_method == "UMAP (Manifold)":
-                    uc1, uc2 = st.columns(2)
-                    u_nb = uc1.slider("n_neighbors", 5, 45, 15, 5, help="Number of neighbors to consider. More neighbors = more global structure preserved.")
-                    u_md = uc2.slider("min_dist", 0.05, 0.50, 0.10, 0.05, help="How tightly points are packed. Smaller = tighter clusters in the visualization.")
+        df_proc["x"] = coords[:, 0]
+        df_proc["y"] = coords[:, 1]
+        if n_comp == 3 and coords.shape[1] >= 3:
+            df_proc["z"] = coords[:, 2]
 
-            if st.session_state.expert_mode:
-                active_clusters = st.multiselect(
-                    "Filter Visible Clusters",
-                    options=list(color_map.keys()),
-                    default=list(color_map.keys()),
-                    help="Show or hide specific clusters from the chart.",
+        vis_df = df_proc[df_proc["Cluster_Label"].isin(active_clusters)]
+        x_lbl, y_lbl, z_lbl = axes_lbls
+
+        if n_comp == 2:
+            if color_opt == "Cluster":
+                fig = px.scatter(
+                    vis_df, x="x", y="y", color="Cluster_Label",
+                    color_discrete_map=color_map,
+                    hover_data=feats[:5],
                 )
             else:
-                active_clusters = list(color_map.keys())
-
-            with st.spinner("Rendering projection..."):
-                coords, axes_lbls, trust_val, loadings = compute_embedding(
-                    x_mat, emb_method, n_comp, perp, lr_c, u_nb, u_md
+                fig = px.scatter(
+                    vis_df, x="x", y="y", color=color_opt,
+                    color_continuous_scale="Plasma" if st.session_state.theme_mode == "Dark" else "Viridis",
+                    hover_data=["Cluster_Label"] + feats[:4],
                 )
+            fig.update_traces(marker=dict(size=11, opacity=0.92, line=dict(width=1.2, color=T["marker_edge"])))
 
-            df_proc["x"] = coords[:, 0]
-            df_proc["y"] = coords[:, 1]
-            if n_comp == 3 and coords.shape[1] >= 3:
-                df_proc["z"] = coords[:, 2]
-
-            vis_df = df_proc[df_proc["Cluster_Label"].isin(active_clusters)]
-            x_lbl, y_lbl, z_lbl = axes_lbls
-
-            if n_comp == 2:
-                if color_opt == "Cluster":
-                    fig = px.scatter(
-                        vis_df, x="x", y="y", color="Cluster_Label",
-                        color_discrete_map=color_map,
-                        hover_data=feats[:5],
-                    )
-                else:
-                    fig = px.scatter(
-                        vis_df, x="x", y="y", color=color_opt,
-                        color_continuous_scale="Plasma" if st.session_state.theme_mode == "Dark" else "Viridis",
-                        hover_data=["Cluster_Label"] + feats[:4],
-                    )
-                fig.update_traces(marker=dict(size=10, opacity=0.9, line=dict(width=1, color=T["marker_edge"])))
-
-                if emb_method == "PCA (Linear)" and loadings is not None and loadings.shape[1] >= 2:
-                    if st.session_state.expert_mode and st.checkbox("Overlay PCA Feature Vectors", value=False, help="Show arrows indicating which features contribute most to each principal component."):
-                        vecs = loadings * 4.0
-                        for i, fname in enumerate(feats):
-                            vx, vy = float(vecs[i, 0]), float(vecs[i, 1])
-                            fig.add_shape(type="line", x0=0, y0=0, x1=vx, y1=vy, line=dict(color=T["vector_color"], width=1.5))
-                            fig.add_annotation(x=vx * 1.12, y=vy * 1.12, text=fname.upper(), showarrow=False, font=dict(family="JetBrains Mono", size=11, color=T["text_primary"]))
-            else:
-                fig = px.scatter_3d(
-                    vis_df, x="x", y="y", z="z",
-                    color="Cluster_Label" if color_opt == "Cluster" else color_opt,
-                    color_discrete_map=color_map if color_opt == "Cluster" else None,
-                    hover_data=feats[:4],
-                )
-                fig.update_traces(marker=dict(size=6, opacity=0.9, line=dict(width=0.6, color=T["marker_edge"])))
-
-            fig.update_layout(
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="JetBrains Mono, monospace", color=T["text_secondary"], size=13),
-                height=500,
-                margin=dict(l=20, r=20, t=38, b=20),
-                xaxis=dict(title=dict(text=x_lbl, font=dict(size=14, color=T["text_primary"])), tickfont=dict(size=12, color=T["text_muted"]), showgrid=True, gridcolor=T["grid"], zerolinecolor=T["zero"]),
-                yaxis=dict(title=dict(text=y_lbl, font=dict(size=14, color=T["text_primary"])), tickfont=dict(size=12, color=T["text_muted"]), showgrid=True, gridcolor=T["grid"], zerolinecolor=T["zero"]),
-                scene=dict(
-                    bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(title=dict(text=x_lbl, font=dict(size=13, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
-                    yaxis=dict(title=dict(text=y_lbl, font=dict(size=13, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
-                    zaxis=dict(title=dict(text=z_lbl, font=dict(size=13, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
-                ),
-                legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="left", x=0, title=None, font=dict(size=12, color=T["text_primary"])),
+            if emb_method == "PCA (Linear)" and loadings is not None and loadings.shape[1] >= 2:
+                if st.session_state.expert_mode and st.checkbox("Overlay PCA Feature Vectors", value=False, help="Show arrows indicating which features contribute most to each principal component."):
+                    vecs = loadings * 4.0
+                    for i, fname in enumerate(feats):
+                        vx, vy = float(vecs[i, 0]), float(vecs[i, 1])
+                        fig.add_shape(type="line", x0=0, y0=0, x1=vx, y1=vy, line=dict(color=T["vector_color"], width=1.5))
+                        fig.add_annotation(x=vx * 1.12, y=vy * 1.12, text=fname.upper(), showarrow=False, font=dict(family="Inter, sans-serif", size=12, color=T["text_primary"]))
+        else:
+            fig = px.scatter_3d(
+                vis_df, x="x", y="y", z="z",
+                color="Cluster_Label" if color_opt == "Cluster" else color_opt,
+                color_discrete_map=color_map if color_opt == "Cluster" else None,
+                hover_data=feats[:4],
             )
-            st.session_state.last_fig_html = fig.to_html(include_plotlyjs="cdn").encode("utf-8")
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+            fig.update_traces(marker=dict(size=6.5, opacity=0.92, line=dict(width=0.7, color=T["marker_edge"])))
 
-            if not st.session_state.expert_mode:
-                st.caption(f"**How to read this chart:** Each dot is one record. Colors show which group (cluster) it belongs to. Points close together share similar feature values. This is a {emb_method.split('(')[0].strip()} projection \u2014 it simplifies your high-dimensional data into a {dims.split()[0]} view.")
+        fig.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Inter, sans-serif", color=T["text_secondary"], size=14),
+            height=560,
+            margin=dict(l=24, r=24, t=44, b=24),
+            hoverlabel=dict(bgcolor=T["bg_elevated"], bordercolor=T["border_hover"], font=dict(family="Inter, sans-serif", size=13, color=T["text_primary"])),
+            modebar=dict(bgcolor="rgba(0,0,0,0)", color=T["text_muted"], activecolor=T["accent"]),
+            xaxis=dict(title=dict(text=x_lbl, font=dict(size=15, color=T["text_primary"])), tickfont=dict(size=13, color=T["text_muted"]), showgrid=True, gridcolor=T["grid"], zerolinecolor=T["zero"]),
+            yaxis=dict(title=dict(text=y_lbl, font=dict(size=15, color=T["text_primary"])), tickfont=dict(size=13, color=T["text_muted"]), showgrid=True, gridcolor=T["grid"], zerolinecolor=T["zero"]),
+            scene=dict(
+                bgcolor="rgba(0,0,0,0)",
+                xaxis=dict(title=dict(text=x_lbl, font=dict(size=14, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
+                yaxis=dict(title=dict(text=y_lbl, font=dict(size=14, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
+                zaxis=dict(title=dict(text=z_lbl, font=dict(size=14, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
+            ),
+            legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="left", x=0, title=None, font=dict(size=13, color=T["text_primary"])),
+        )
+        st.session_state.last_fig_html = fig.to_html(include_plotlyjs="cdn").encode("utf-8")
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
 
-            # Cluster Legend & Meaning
-            cards_html = ""
-            for cid in unique_labels_sorted:
-                cname = c_names[cid]
-                cnt = int((labels == cid).sum())
-                pct = cnt / len(df_proc) * 100
-                cards_html += (
-                    f'<div class="legend-card">'
-                    f'<span class="dot-ind" style="background:{color_map[cname]}; margin-top:6px;"></span>'
-                    f'<div><div class="legend-title">{cname}</div>'
-                    f'<div class="legend-desc">{cnt} records ({pct:.1f}%)</div></div></div>'
-                )
-            st.markdown(f'<div class="legend-grid">{cards_html}</div>', unsafe_allow_html=True)
+        st.caption(
+            f"**Interactive controls:** Drag to zoom, hover any dot for record details, click a legend item to isolate/hide groups, or double-click the chart to reset the view. "
+            f"(Active view: {emb_method.split('(')[0].strip()} in {dims.split()[0]}.)"
+        )
 
-        with s_col:
-            sil_disp = f"{st.session_state.sil_score:.3f}" if st.session_state.sil_score is not None else "N/A"
-            dbi_disp = f"{st.session_state.dbi_score:.3f}" if st.session_state.dbi_score is not None else "N/A"
-
-            sil_help = "Measures how similar each point is to its own cluster vs. other clusters. Higher is better." if not st.session_state.expert_mode else "Range [-1, 1]. Higher = sharper cluster separation. >0.45 is strong, 0.25\u20130.45 is moderate."
-            dbi_help = "Measures how well-separated the clusters are. Lower is better." if not st.session_state.expert_mode else "Lower = tighter, better separated clusters. <1.0 indicates good separation."
-            trust_help = "How well the chart preserves the relationships from the original data. Closer to 1.0 is better." if not st.session_state.expert_mode else f"Neighborhood preservation in {emb_method.split()[0]}. 1.0 = perfect local fidelity."
-
-            st.markdown(
-                f"""
-            <div class="bento">
-                <div class="bento-label">SILHOUETTE SCORE</div>
-                <div class="bento-num">{sil_disp}</div>
-                <div class="bento-meta">{sil_help}</div>
-            </div>
-            <div class="bento">
-                <div class="bento-label">DAVIES-BOULDIN INDEX</div>
-                <div class="bento-num">{dbi_disp}</div>
-                <div class="bento-meta">{dbi_help}</div>
-            </div>
-            <div class="bento">
-                <div class="bento-label">TRUSTWORTHINESS</div>
-                <div class="bento-num">{trust_val:.3f}</div>
-                <div class="bento-meta">{trust_help}</div>
-            </div>
-            """,
-                unsafe_allow_html=True,
+        # Cluster Legend & Meaning
+        cards_html = ""
+        for cid in unique_labels_sorted:
+            cname = c_names[cid]
+            cnt = int((labels == cid).sum())
+            pct = cnt / len(df_proc) * 100
+            cards_html += (
+                f'<div class="legend-card">'
+                f'<span class="dot-ind" style="background:{color_map[cname]}; margin-top:6px;"></span>'
+                f'<div><div class="legend-title">{cname}</div>'
+                f'<div class="legend-desc">{cnt} records ({pct:.1f}%)</div></div></div>'
             )
+        st.markdown(f'<div class="legend-grid">{cards_html}</div>', unsafe_allow_html=True)
+
+        # Interactive Clickable Group Profile Explorer
+        st.markdown('<div class="sec-title">EXPLORE GROUP PROFILES &amp; SUPPORT STRATEGIES</div>', unsafe_allow_html=True)
+        stage5_insights = generate_ai_insights(
+            st.session_state.proc_df, labels, c_names, feats,
+            st.session_state.algo_used, st.session_state.sil_score, st.session_state.dbi_score,
+        )
+        profile_map = {c["name"]: c for c in stage5_insights["cluster_cards"]}
+        selected_group = st.radio(
+            "Click a group to view its strengths, weaknesses, and support strategies:",
+            options=list(profile_map.keys()),
+            horizontal=True,
+            key="stage5_profile_selector",
+        )
+        grp = profile_map[selected_group]
+        grp_color = color_map.get(selected_group, T["accent"])
+        strat_html = "".join(f"<li>{s}</li>" for s in grp["strategies"])
+        st.markdown(
+            f"""
+        <div class="bento" style="border-left: 4px solid {grp_color};">
+            <div class="bento-label"><span class="dot-ind" style="background:{grp_color};"></span> {grp['name']} — {grp['count']} records ({grp['pct']:.1f}%)</div>
+            <div class="bento-meta" style="margin-bottom:0.6rem;">{grp['summary']}</div>
+            <div class="bento-meta"><strong>Observed Strengths:</strong> {', '.join(grp['strengths'])}</div>
+            <div class="bento-meta"><strong>Observed Weaknesses:</strong> {', '.join(grp['weaknesses'])}</div>
+            <div class="bento-meta" style="margin-top:0.55rem;"><strong>Possible Support Strategies:</strong><ul style="margin:0.3rem 0 0 1.2rem; padding:0;">{strat_html}</ul></div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+        # Cluster Comparison: Average Feature Scores (explains why each group got its label)
+        st.markdown('<div class="sec-title">CLUSTER COMPARISON: AVERAGE SCORES BY FEATURE</div>', unsafe_allow_html=True)
+        if not st.session_state.expert_mode:
+            st.caption("Compare each group's average scores side by side to see why each group received its label.")
+        avg_scores_tbl = df_proc.groupby("Cluster_Label")[feats].mean().round(1)
+        st.dataframe(avg_scores_tbl, use_container_width=True)
 
     with tab_compare:
         st.markdown('<div class="sec-title">CLUSTERING RUN COMPARISON</div>', unsafe_allow_html=True)
@@ -1818,39 +1998,65 @@ elif st.session_state.stage_idx == 5:
 
     m1, m2 = st.columns(2)
     with m1:
+        sil_simple = (
+            "Your groups are clearly distinct with minimal overlap."
+            if (st.session_state.sil_score or 0) >= 0.45
+            else "Your groups show meaningful differences, with some records sitting near the border between groups."
+            if (st.session_state.sil_score or 0) >= 0.25
+            else "Groups have noticeable overlap. Trying a different number of groups (k) in Step 4 may sharpen them."
+        )
         st.markdown(
             f"""
         <div class="bento">
-            <div class="bento-label">SILHOUETTE SCORE INTERPRETATION</div>
-            <div class="bento-meta">{insights['sil_note']}</div>
+            <div class="bento-label">GROUP SEPARATION QUALITY (SILHOUETTE)</div>
+            <div class="bento-meta" style="font-size:1rem;"><strong>Plain-English takeaway:</strong> {sil_simple}</div>
         </div>
         """,
             unsafe_allow_html=True,
         )
     with m2:
+        dbi_simple = (
+            "Records within each group are tightly packed and well-separated from other groups."
+            if (st.session_state.dbi_score or 99) <= 1.0
+            else "Some groups are fairly spread out and sit close to neighboring groups."
+        )
         st.markdown(
             f"""
         <div class="bento">
-            <div class="bento-label">DAVIES-BOULDIN INTERPRETATION</div>
-            <div class="bento-meta">{insights['dbi_note']}</div>
+            <div class="bento-label">GROUP COMPACTNESS (DAVIES-BOULDIN)</div>
+            <div class="bento-meta" style="font-size:1rem;"><strong>Plain-English takeaway:</strong> {dbi_simple}</div>
         </div>
         """,
             unsafe_allow_html=True,
         )
 
-    st.markdown('<div class="sec-title">CLUSTER CHARACTERISTICS &amp; PATTERNS</div>', unsafe_allow_html=True)
+    with st.expander("Technical details: how Silhouette Score & Davies-Bouldin Index work"):
+        st.markdown(
+            f"""
+- **Silhouette Score:** {insights['sil_note']} Ranges from `-1` to `+1`; higher values indicate tighter, better-isolated clusters.
+- **Davies-Bouldin Index:** {insights['dbi_note']} Lower values (especially `<= 1.0`) indicate compact clusters that are far apart from each other.
+            """
+        )
+
+    st.markdown('<div class="sec-title">CLUSTER CHARACTERISTICS &amp; SUPPORT STRATEGIES</div>', unsafe_allow_html=True)
     if not st.session_state.expert_mode:
-        st.caption("Each card below describes one cluster \u2014 what it's good at, what it's low on, and how many records belong to it.")
+        st.caption("Each card separates observed data findings (strengths & weaknesses) from suggested support strategies.")
     cols = st.columns(2)
     for idx, card in enumerate(insights["cluster_cards"]):
         c_color = "#71717a" if card["cid"] == -1 else T["colors"][idx % len(T["colors"])]
+        strat_list = "".join(f"<li>{s}</li>" for s in card["strategies"])
         with cols[idx % 2]:
             st.markdown(
                 f"""
-            <div class="bento">
+            <div class="bento" style="border-left: 4px solid {c_color};">
                 <div class="bento-label"><span class="dot-ind" style="background:{c_color};"></span> {card['name']} ({card['pct']:.1f}% \u00b7 n={card['count']})</div>
-                <div class="bento-meta"><strong>Strongest features:</strong> {', '.join(card['strengths'])}</div>
-                <div class="bento-meta"><strong>Lowest features:</strong> {', '.join(card['weaknesses'])}</div>
+                <div class="bento-meta" style="margin-bottom:0.6rem; font-size:0.98rem;">{card['summary']}</div>
+                <div class="bento-meta" style="padding:8px 10px; border-radius:8px; background:var(--bg-elevated); margin-bottom:0.55rem;">
+                    <strong>Observed Findings</strong><br>
+                    \u2022 <strong>Strengths:</strong> {', '.join(card['strengths'])}<br>
+                    \u2022 <strong>Weaknesses:</strong> {', '.join(card['weaknesses'])}
+                </div>
+                <div class="bento-meta"><strong>Suggested Support Strategies (Actions):</strong><ul style="margin:0.3rem 0 0 1.2rem; padding:0;">{strat_list}</ul></div>
             </div>
             """,
                 unsafe_allow_html=True,
