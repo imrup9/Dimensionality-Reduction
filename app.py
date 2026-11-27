@@ -150,10 +150,10 @@ st.markdown(
     }
 
     .hero-p {
-        font-size: 0.98rem;
+        font-size: 1.05rem;
         color: var(--text-secondary);
-        line-height: 1.6;
-        max-width: 680px;
+        line-height: 1.65;
+        max-width: 720px;
         margin: 0;
     }
 
@@ -175,35 +175,66 @@ st.markdown(
 
     .bento-label {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.08em;
+        font-size: 0.84rem;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: #d4d4d8;
         margin-bottom: 0.45rem;
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 8px;
     }
 
     .bento-num {
         font-family: 'DotGothic16', monospace;
-        font-size: 2.15rem;
+        font-size: 2.35rem;
         line-height: 1.1;
         color: #ffffff;
         letter-spacing: 0.02em;
     }
 
     .bento-meta {
-        font-size: 0.8rem;
+        font-size: 0.92rem;
         color: var(--text-secondary);
-        margin-top: 0.4rem;
+        margin-top: 0.45rem;
+        line-height: 1.45;
     }
 
     .dot-ind {
-        width: 7px;
-        height: 7px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         display: inline-block;
+        flex-shrink: 0;
+    }
+
+    /* Cluster Meaning Legend Strip */
+    .legend-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .legend-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .legend-title {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 2px;
+    }
+    .legend-desc {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
     }
 
     /* Segmented Control (Radio Override) */
@@ -243,7 +274,7 @@ st.markdown(
 
     div[data-testid="stRadio"] label p {
         font-family: 'JetBrains Mono', monospace !important;
-        font-size: 0.78rem !important;
+        font-size: 0.86rem !important;
         letter-spacing: 0.04em !important;
         color: var(--text-secondary) !important;
         margin: 0 !important;
@@ -258,10 +289,10 @@ st.markdown(
     div[data-testid="stSelectbox"] label,
     div[data-testid="stSlider"] label {
         font-family: 'JetBrains Mono', monospace !important;
-        font-size: 0.72rem !important;
-        letter-spacing: 0.08em !important;
+        font-size: 0.82rem !important;
+        letter-spacing: 0.06em !important;
         text-transform: uppercase !important;
-        color: var(--text-muted) !important;
+        color: #d4d4d8 !important;
     }
 
     div[data-testid="stSelectbox"] > div > div {
@@ -269,7 +300,7 @@ st.markdown(
         border: 1px solid var(--border-subtle) !important;
         border-radius: 9px !important;
         color: var(--text-primary) !important;
-        font-size: 0.88rem !important;
+        font-size: 0.96rem !important;
         transition: border-color 0.2s ease !important;
     }
 
@@ -323,11 +354,11 @@ st.markdown(
     /* Section title */
     .sec-title {
         font-family: 'DotGothic16', monospace;
-        font-size: 1rem;
+        font-size: 1.2rem;
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: #ffffff;
-        margin-bottom: 0.8rem;
+        margin-bottom: 0.9rem;
     }
 
     /* Subject bar row */
@@ -335,20 +366,21 @@ st.markdown(
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 6px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.04);
-        font-size: 0.84rem;
+        padding: 7px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-size: 0.94rem;
     }
     .subj-name {
         font-family: 'JetBrains Mono', monospace;
-        color: var(--text-secondary);
+        color: #d4d4d8;
         text-transform: uppercase;
-        font-size: 0.75rem;
+        font-size: 0.84rem;
     }
     .subj-val {
         font-family: 'JetBrains Mono', monospace;
         color: #ffffff;
         font-weight: 600;
+        font-size: 0.94rem;
     }
 </style>
 """,
@@ -463,15 +495,15 @@ if active_view == "01  MANIFOLD MAP":
         if method == "PCA (Linear)":
             pca = PCA(n_components=n_comp, random_state=42)
             coords = pca.fit_transform(X_scaled)
-            x_lbl = f"PC1 · Core Aptitude ({pca.explained_variance_ratio_[0]*100:.1f}%)"
-            y_lbl = f"PC2 · Electives ({pca.explained_variance_ratio_[1]*100:.1f}%)"
-            z_lbl = f"PC3 · STEM vs Hum ({pca.explained_variance_ratio_[2]*100:.1f}%)" if n_comp == 3 else ""
+            x_lbl = f"PC1 — Core Academic Aptitude ({pca.explained_variance_ratio_[0]*100:.1f}% var)"
+            y_lbl = f"PC2 — Electives: Band & PhysEd ({pca.explained_variance_ratio_[1]*100:.1f}% var)"
+            z_lbl = f"PC3 — STEM vs. Humanities ({pca.explained_variance_ratio_[2]*100:.1f}% var)" if n_comp == 3 else ""
         else:
             tsne = TSNE(n_components=n_comp, perplexity=20, learning_rate="auto", init="pca", random_state=42)
             coords = tsne.fit_transform(X_scaled)
-            x_lbl = "t-SNE Dim 1"
-            y_lbl = "t-SNE Dim 2"
-            z_lbl = "t-SNE Dim 3" if n_comp == 3 else ""
+            x_lbl = "t-SNE Dim 1 — Non-Linear Local Neighborhood Axis"
+            y_lbl = "t-SNE Dim 2 — Non-Linear Cluster Separation Axis"
+            z_lbl = "t-SNE Dim 3 — Non-Linear Manifold Depth Axis" if n_comp == 3 else ""
 
         sil = silhouette_score(coords, df["Cluster"])
 
@@ -614,30 +646,78 @@ if active_view == "01  MANIFOLD MAP":
         fig.update_layout(
             plot_bgcolor="rgba(0,0,0,0)",
             paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="JetBrains Mono, monospace", color="#a1a1aa", size=11),
-            height=490,
-            margin=dict(l=16, r=16, t=28, b=16),
-            xaxis=dict(title=x_lbl, showgrid=True, gridcolor="rgba(255,255,255,0.045)", zerolinecolor="rgba(255,255,255,0.1)"),
-            yaxis=dict(title=y_lbl, showgrid=True, gridcolor="rgba(255,255,255,0.045)", zerolinecolor="rgba(255,255,255,0.1)"),
+            font=dict(family="JetBrains Mono, monospace", color="#d4d4d8", size=13),
+            height=510,
+            margin=dict(l=20, r=20, t=36, b=20),
+            xaxis=dict(
+                title=dict(text=x_lbl, font=dict(size=14, color="#f4f4f5")),
+                tickfont=dict(size=12, color="#a1a1aa"),
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.055)",
+                zerolinecolor="rgba(255,255,255,0.14)",
+            ),
+            yaxis=dict(
+                title=dict(text=y_lbl, font=dict(size=14, color="#f4f4f5")),
+                tickfont=dict(size=12, color="#a1a1aa"),
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.055)",
+                zerolinecolor="rgba(255,255,255,0.14)",
+            ),
             scene=dict(
                 bgcolor="rgba(0,0,0,0)",
-                xaxis=dict(showbackground=False, gridcolor="rgba(255,255,255,0.07)", showspikes=False),
-                yaxis=dict(showbackground=False, gridcolor="rgba(255,255,255,0.07)", showspikes=False),
-                zaxis=dict(showbackground=False, gridcolor="rgba(255,255,255,0.07)", showspikes=False),
+                xaxis=dict(title=dict(text=x_lbl, font=dict(size=13, color="#f4f4f5")), tickfont=dict(size=11), showbackground=False, gridcolor="rgba(255,255,255,0.08)", showspikes=False),
+                yaxis=dict(title=dict(text=y_lbl, font=dict(size=13, color="#f4f4f5")), tickfont=dict(size=11), showbackground=False, gridcolor="rgba(255,255,255,0.08)", showspikes=False),
+                zaxis=dict(title=dict(text=z_lbl, font=dict(size=13, color="#f4f4f5")), tickfont=dict(size=11), showbackground=False, gridcolor="rgba(255,255,255,0.08)", showspikes=False),
             ),
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
-                y=1.02,
+                y=1.03,
                 xanchor="left",
                 x=0,
                 title=None,
-                font=dict(size=11, color="#e4e4e7"),
+                font=dict(size=13, color="#f4f4f5"),
                 itemsizing="constant",
             ),
         )
 
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+        st.markdown(
+            """
+        <div class="legend-grid">
+            <div class="legend-card">
+                <span class="dot-ind" style="background:#F43F5E; margin-top:6px;"></span>
+                <div>
+                    <div class="legend-title">At-Risk (44%)</div>
+                    <div class="legend-desc">Low STEM &amp; Humanities scores masked by high elective grades.</div>
+                </div>
+            </div>
+            <div class="legend-card">
+                <span class="dot-ind" style="background:#818CF8; margin-top:6px;"></span>
+                <div>
+                    <div class="legend-title">Humanities-Focused (25%)</div>
+                    <div class="legend-desc">Strong verbal literacy (English, History, Spanish); moderate STEM.</div>
+                </div>
+            </div>
+            <div class="legend-card">
+                <span class="dot-ind" style="background:#34D399; margin-top:6px;"></span>
+                <div>
+                    <div class="legend-title">Electives Leaders (22%)</div>
+                    <div class="legend-desc">Top Band &amp; PhysEd engagement paired with solid Humanities.</div>
+                </div>
+            </div>
+            <div class="legend-card">
+                <span class="dot-ind" style="background:#FFFFFF; margin-top:6px;"></span>
+                <div>
+                    <div class="legend-title">All-Rounders (9%)</div>
+                    <div class="legend-desc">High-achieving mastery across all 8 core and elective subjects.</div>
+                </div>
+            </div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
 
     with side_col:
         at_risk_n = int((df["Archetype"] == "At-Risk").sum())
@@ -695,6 +775,12 @@ elif active_view == "02  COHORT PROFILES":
     ).round(1)
 
     order = ["At-Risk", "Humanities-Focused", "Electives Leaders", "All-Rounders"]
+    meaning_map = {
+        "At-Risk": "Low core academics masked by electives",
+        "Humanities-Focused": "Strong verbal skills; moderate STEM",
+        "Electives Leaders": "Peak Band & PhysEd + solid Humanities",
+        "All-Rounders": "Elite mastery across all 8 subjects",
+    }
     cols = st.columns(4)
     for idx, name in enumerate(order):
         row = stats.loc[name]
@@ -706,6 +792,7 @@ elif active_view == "02  COHORT PROFILES":
                 <div class="bento-label"><span class="dot-ind" style="background:{color};"></span> {name}</div>
                 <div class="bento-num">{int(row['Count'])}%</div>
                 <div class="bento-meta">Mean GPA: <strong style="color:#fff;">{row['GPA']}</strong></div>
+                <div class="bento-meta" style="font-size:0.84rem; color:#a1a1aa; margin-top:4px;">{meaning_map[name]}</div>
                 <div class="hairline" style="margin: 0.9rem 0;"></div>
                 <div class="subj-row"><span class="subj-name">STEM</span><span class="subj-val">{row['STEM']}</span></div>
                 <div class="subj-row"><span class="subj-name">Humanities</span><span class="subj-val">{row['Hum']}</span></div>
@@ -754,21 +841,21 @@ elif active_view == "02  COHORT PROFILES":
                     visible=True,
                     range=[25, 100],
                     tickvals=[40, 60, 80, 100],
-                    gridcolor="rgba(255,255,255,0.07)",
-                    linecolor="rgba(255,255,255,0.08)",
-                    tickfont=dict(size=9, color="#71717a"),
+                    gridcolor="rgba(255,255,255,0.08)",
+                    linecolor="rgba(255,255,255,0.1)",
+                    tickfont=dict(size=11, color="#a1a1aa"),
                 ),
                 angularaxis=dict(
-                    gridcolor="rgba(255,255,255,0.07)",
-                    linecolor="rgba(255,255,255,0.08)",
-                    tickfont=dict(size=10, color="#d4d4d8"),
+                    gridcolor="rgba(255,255,255,0.08)",
+                    linecolor="rgba(255,255,255,0.1)",
+                    tickfont=dict(size=13, color="#f4f4f5"),
                 ),
             ),
             paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="JetBrains Mono, monospace", color="#a1a1aa", size=11),
-            height=440,
-            margin=dict(l=40, r=40, t=35, b=30),
-            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="left", x=0),
+            font=dict(family="JetBrains Mono, monospace", color="#d4d4d8", size=13),
+            height=470,
+            margin=dict(l=50, r=50, t=45, b=35),
+            legend=dict(orientation="h", yanchor="bottom", y=1.06, xanchor="left", x=0, font=dict(size=13, color="#f4f4f5")),
         )
         st.plotly_chart(fig_cohort, use_container_width=True, config={"displayModeBar": False})
     else:
@@ -782,20 +869,30 @@ elif active_view == "02  COHORT PROFILES":
                     y=vals,
                     mode="lines+markers",
                     name=arch,
-                    line=dict(color=PALETTE[arch], width=2.5, shape="spline", smoothing=0.8),
-                    marker=dict(size=8, color=PALETTE[arch], line=dict(width=1.2, color="#050507")),
+                    line=dict(color=PALETTE[arch], width=2.8, shape="spline", smoothing=0.8),
+                    marker=dict(size=9, color=PALETTE[arch], line=dict(width=1.2, color="#050507")),
                 )
             )
         fig_curve.update_layout(
             plot_bgcolor="rgba(0,0,0,0)",
             paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="JetBrains Mono, monospace", color="#a1a1aa", size=11),
-            height=410,
-            margin=dict(l=20, r=20, t=30, b=20),
+            font=dict(family="JetBrains Mono, monospace", color="#d4d4d8", size=13),
+            height=430,
+            margin=dict(l=20, r=20, t=35, b=20),
             hovermode="x unified",
-            xaxis=dict(showgrid=False),
-            yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)", range=[30, 100], title="Mean Grade"),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, title=None),
+            xaxis=dict(
+                title=dict(text="Academic Subject (8-Dimensional Feature Space)", font=dict(size=14, color="#f4f4f5")),
+                tickfont=dict(size=12, color="#d4d4d8"),
+                showgrid=False,
+            ),
+            yaxis=dict(
+                title=dict(text="Mean Cohort Grade (0–100 Scale)", font=dict(size=14, color="#f4f4f5")),
+                tickfont=dict(size=12, color="#a1a1aa"),
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.06)",
+                range=[30, 100],
+            ),
+            legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="left", x=0, title=None, font=dict(size=13, color="#f4f4f5")),
         )
         st.plotly_chart(fig_curve, use_container_width=True, config={"displayModeBar": False})
 
@@ -939,11 +1036,23 @@ else:
         traj.update_layout(
             plot_bgcolor="rgba(0,0,0,0)",
             paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="JetBrains Mono, monospace", color="#a1a1aa", size=10),
-            height=275,
-            margin=dict(l=15, r=15, t=20, b=15),
-            xaxis=dict(title="PC1", showgrid=True, gridcolor="rgba(255,255,255,0.04)", zeroline=False),
-            yaxis=dict(title="PC2", showgrid=True, gridcolor="rgba(255,255,255,0.04)", zeroline=False),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, font=dict(size=9)),
+            font=dict(family="JetBrains Mono, monospace", color="#d4d4d8", size=12),
+            height=310,
+            margin=dict(l=20, r=20, t=36, b=20),
+            xaxis=dict(
+                title=dict(text="PC1 — Core Academic Aptitude (Low → High)", font=dict(size=13, color="#f4f4f5")),
+                tickfont=dict(size=11, color="#a1a1aa"),
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.05)",
+                zeroline=False,
+            ),
+            yaxis=dict(
+                title=dict(text="PC2 — Electives Engagement (Low → High)", font=dict(size=13, color="#f4f4f5")),
+                tickfont=dict(size=11, color="#a1a1aa"),
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.05)",
+                zeroline=False,
+            ),
+            legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="left", x=0, font=dict(size=12, color="#f4f4f5")),
         )
         st.plotly_chart(traj, use_container_width=True, config={"displayModeBar": False})
