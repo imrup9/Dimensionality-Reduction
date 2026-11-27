@@ -435,6 +435,8 @@ def init_session():
         st.session_state.missing_strategy = "Drop rows with missing values"
     if "drop_duplicates" not in st.session_state:
         st.session_state.drop_duplicates = True
+    if "projection_method" not in st.session_state:
+        st.session_state.projection_method = "PCA (Linear)"
     if "proc_df" not in st.session_state:
         df_s = st.session_state.raw_df.copy()
         feats = st.session_state.selected_features
@@ -535,7 +537,8 @@ with st.sidebar:
     st.markdown(
         f"**{st.session_state.dataset_name}**  \n"
         f"{len(st.session_state.proc_df)} rows · {len(st.session_state.selected_features)} features  \n"
-        f"Algorithm: `{st.session_state.algo_used}`"
+        f"Clustering: `{st.session_state.algo_used}`  \n"
+        f"Projection: `{st.session_state.projection_method.split(' ')[0]}`"
     )
 
 
@@ -1531,11 +1534,16 @@ elif st.session_state.stage_idx == 4:
             alg_opts = ["PCA (Linear)", "t-SNE (Non-Linear)"] + (["UMAP (Manifold)"] if HAS_UMAP else [])
             v1, v2, v3 = st.columns([1.2, 1.2, 0.9])
             with v1:
+                proj_idx = alg_opts.index(st.session_state.projection_method) if st.session_state.projection_method in alg_opts else 0
                 emb_method = st.selectbox(
                     "Projection",
                     alg_opts,
+                    index=proj_idx,
                     help="PCA: fast, preserves global variance. t-SNE: reveals local neighborhoods. UMAP: balances global and local structure." if st.session_state.expert_mode else "Choose how to display your data. PCA is simplest and fastest. t-SNE shows tighter groups.",
                 )
+                if emb_method != st.session_state.projection_method:
+                    st.session_state.projection_method = emb_method
+                    st.rerun()
             with v2:
                 color_opt = st.selectbox(
                     "Color By",
