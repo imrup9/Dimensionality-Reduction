@@ -47,6 +47,8 @@ STAGES = [
     "07 · Export & Save",
 ]
 
+STAGE_ICONS = ["🏠", "📂", "🔧", "🎯", "📊", "🧠", "💾"]
+
 DEFAULT_SUBJECTS = ["math", "science", "cs", "band", "english", "history", "spanish", "physed"]
 
 CLUSTER_COLORS_DARK = [
@@ -75,14 +77,17 @@ ALGO_INFO = {
     "K-Means": {
         "summary": "Partitions records into k compact, spherical clusters by minimizing distance to each cluster centroid.",
         "best_for": "Well-separated numerical cohorts with roughly balanced sizes (recommended default).",
+        "beginner": "Think of it like sorting students into groups based on how similar their grades are. You pick how many groups you want.",
     },
     "DBSCAN": {
         "summary": "Groups densely packed points together and automatically flags isolated outliers as Noise (-1).",
         "best_for": "Irregularly shaped clusters and datasets containing anomalous or outlier records.",
+        "beginner": "This algorithm finds natural groups by looking for areas where data points are packed closely together. It can also spot unusual outliers.",
     },
     "Hierarchical": {
         "summary": "Builds a bottom-up nested hierarchy of clusters by iteratively merging the closest pairs.",
         "best_for": "Small-to-medium datasets where nested subgroup structure matters.",
+        "beginner": "Imagine building a family tree of your data — it starts with every record alone, then keeps merging the most similar pairs until you have the number of groups you want.",
     },
 }
 
@@ -97,6 +102,7 @@ THEMES = {
         "text_primary": "#f8fafc",
         "text_secondary": "#cbd5e1",
         "text_muted": "#94a3b8",
+        "text_on_accent": "#ffffff",
         "grid": "rgba(255, 255, 255, 0.06)",
         "zero": "rgba(255, 255, 255, 0.16)",
         "shadow": "0 8px 24px -6px rgba(0, 0, 0, 0.45)",
@@ -104,24 +110,57 @@ THEMES = {
         "marker_edge": "#07090f",
         "vector_color": "rgba(248, 250, 252, 0.55)",
         "arrow_color": "#ffffff",
+        "accent": "#818CF8",
+        "accent_muted": "rgba(129, 140, 248, 0.15)",
+        "success": "#34D399",
+        "warning": "#FBBF24",
+        "error": "#F43F5E",
+        "widget_bg": "#161c2e",
+        "widget_border": "rgba(255, 255, 255, 0.12)",
+        "widget_text": "#f8fafc",
+        "table_header_bg": "#161c2e",
+        "table_header_text": "#cbd5e1",
+        "table_row_bg": "#0f131f",
+        "table_row_alt": "#121828",
+        "breadcrumb_inactive": "#475569",
+        "breadcrumb_active_bg": "rgba(129, 140, 248, 0.18)",
+        "tooltip_bg": "#1e293b",
+        "tooltip_text": "#f8fafc",
     },
     "Light": {
         "bg_root": "#f4f6fb",
         "bg_surface": "#ffffff",
-        "bg_elevated": "#f8fafc",
+        "bg_elevated": "#f0f2f8",
         "bg_sidebar": "#ffffff",
-        "border": "rgba(15, 23, 42, 0.10)",
+        "border": "rgba(15, 23, 42, 0.12)",
         "border_hover": "rgba(79, 70, 229, 0.45)",
         "text_primary": "#0f172a",
         "text_secondary": "#334155",
         "text_muted": "#64748b",
+        "text_on_accent": "#ffffff",
         "grid": "rgba(15, 23, 42, 0.07)",
         "zero": "rgba(15, 23, 42, 0.18)",
-        "shadow": "0 6px 20px -4px rgba(15, 23, 42, 0.08)",
+        "shadow": "0 6px 20px -4px rgba(15, 23, 42, 0.10)",
         "colors": CLUSTER_COLORS_LIGHT,
         "marker_edge": "#ffffff",
         "vector_color": "rgba(15, 23, 42, 0.55)",
         "arrow_color": "#0f172a",
+        "accent": "#4F46E5",
+        "accent_muted": "rgba(79, 70, 229, 0.10)",
+        "success": "#059669",
+        "warning": "#D97706",
+        "error": "#DC2626",
+        "widget_bg": "#ffffff",
+        "widget_border": "rgba(15, 23, 42, 0.18)",
+        "widget_text": "#0f172a",
+        "table_header_bg": "#f0f2f8",
+        "table_header_text": "#334155",
+        "table_row_bg": "#ffffff",
+        "table_row_alt": "#f8fafc",
+        "breadcrumb_inactive": "#94a3b8",
+        "breadcrumb_active_bg": "rgba(79, 70, 229, 0.12)",
+        "tooltip_bg": "#1e293b",
+        "tooltip_text": "#f8fafc",
     },
 }
 
@@ -260,8 +299,8 @@ def generate_ai_insights(df_proc, labels, cluster_names, features, algo, sil, db
         pct = cnt / n_total * 100
         sub_means = df_proc.loc[mask, features].mean()
         z_diff = ((sub_means - global_means) / global_stds).sort_values(ascending=False)
-        strengths = [f"{f.upper()} (+{z_diff[f]:.2f}σ)" for f in z_diff.head(2).index if z_diff[f] > 0.1]
-        weaknesses = [f"{f.upper()} ({z_diff[f]:.2f}σ)" for f in z_diff.tail(2).index if z_diff[f] < -0.1]
+        strengths = [f"{f.upper()} (+{z_diff[f]:.2f}\u03c3)" for f in z_diff.head(2).index if z_diff[f] > 0.1]
+        weaknesses = [f"{f.upper()} ({z_diff[f]:.2f}\u03c3)" for f in z_diff.tail(2).index if z_diff[f] < -0.1]
         cluster_cards.append(
             {
                 "cid": cid,
@@ -312,7 +351,7 @@ def generate_pdf_report(summary_dict, cluster_table_df, insights_dict):
         ax.axis("off")
 
         y = 0.96
-        ax.text(0, y, "MANIFOLD — Clustering & Analytics Report", fontsize=18, fontweight="bold", color="#0f172a")
+        ax.text(0, y, "MANIFOLD \u2014 Clustering & Analytics Report", fontsize=18, fontweight="bold", color="#0f172a")
         y -= 0.035
         ax.text(0, y, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}  |  Dataset: {summary_dict['dataset_name']}", fontsize=10, color="#475569")
         y -= 0.04
@@ -334,17 +373,17 @@ def generate_pdf_report(summary_dict, cluster_table_df, insights_dict):
         y -= 0.02
         ax.text(0, y, "2. AI-Generated Insights", fontsize=13, fontweight="bold", color="#1e293b")
         y -= 0.03
-        ax.text(0.02, y, f"• Separation: {insights_dict['sil_note']}", fontsize=9.5, color="#334155")
+        ax.text(0.02, y, f"\u2022 Separation: {insights_dict['sil_note']}", fontsize=9.5, color="#334155")
         y -= 0.024
-        ax.text(0.02, y, f"• Compactness: {insights_dict['dbi_note']}", fontsize=9.5, color="#334155")
+        ax.text(0.02, y, f"\u2022 Compactness: {insights_dict['dbi_note']}", fontsize=9.5, color="#334155")
         y -= 0.024
-        ax.text(0.02, y, f"• Top Discriminating Features: {', '.join(f.upper() for f in insights_dict['top_drivers'])}", fontsize=9.5, color="#334155")
+        ax.text(0.02, y, f"\u2022 Top Discriminating Features: {', '.join(f.upper() for f in insights_dict['top_drivers'])}", fontsize=9.5, color="#334155")
         y -= 0.035
 
         ax.text(0, y, "3. Cluster Profile Breakdown", fontsize=13, fontweight="bold", color="#1e293b")
         y -= 0.03
         for c in insights_dict["cluster_cards"]:
-            ax.text(0.02, y, f"{c['name']} — {c['count']} records ({c['pct']:.1f}%)", fontsize=10, fontweight="bold", color="#0f172a")
+            ax.text(0.02, y, f"{c['name']} \u2014 {c['count']} records ({c['pct']:.1f}%)", fontsize=10, fontweight="bold", color="#0f172a")
             y -= 0.022
             ax.text(0.04, y, f"Strengths: {', '.join(c['strengths'])}   |   Deficits: {', '.join(c['weaknesses'])}", fontsize=9, color="#475569")
             y -= 0.028
@@ -383,6 +422,8 @@ def init_session():
         st.session_state.stage_idx = 0
     if "theme_mode" not in st.session_state:
         st.session_state.theme_mode = "Dark"
+    if "expert_mode" not in st.session_state:
+        st.session_state.expert_mode = False
     if "raw_df" not in st.session_state:
         sample_df = load_sample_dataset()
         st.session_state.raw_df = sample_df
@@ -444,7 +485,7 @@ init_session()
 # ==========================================
 with st.sidebar:
     st.markdown(
-        """
+        r"""
         <div style="display:flex; align-items:center; gap:10px; padding:4px 0 12px 0;">
             <span style="width:10px; height:10px; border-radius:50%; background:#ff2a3a; box-shadow:0 0 10px rgba(255,42,58,0.7); display:inline-block;"></span>
             <span style="font-family:'DotGothic16', monospace; font-size:1.3rem; letter-spacing:0.12em;">MANIFOLD</span>
@@ -458,9 +499,23 @@ with st.sidebar:
         ["Dark", "Light"],
         index=0 if st.session_state.theme_mode == "Dark" else 1,
         horizontal=True,
+        help="Switch between Dark and Light appearance.",
     )
     st.session_state.theme_mode = theme_choice
     T = THEMES[theme_choice]
+
+    # Beginner / Advanced toggle
+    expert_mode = st.toggle(
+        "Advanced Mode",
+        value=st.session_state.expert_mode,
+        help="Toggle between Beginner (guided, simplified) and Advanced (full control) experience.",
+    )
+    st.session_state.expert_mode = expert_mode
+
+    if not expert_mode:
+        st.caption("🎓 **Beginner Mode** — Guided experience with recommended defaults")
+    else:
+        st.caption("⚙️ **Advanced Mode** — Full parameter control")
 
     st.markdown("---")
     stage_pct = int((st.session_state.stage_idx + 1) / len(STAGES) * 100)
@@ -487,7 +542,7 @@ with st.sidebar:
 
 
 # ==========================================
-# 5. GLOBAL THEME CSS
+# 5. GLOBAL THEME CSS (Fully themed for both modes)
 # ==========================================
 st.markdown(
     f"""
@@ -505,6 +560,11 @@ st.markdown(
         --text-secondary: {T['text_secondary']};
         --text-muted: {T['text_muted']};
         --card-shadow: {T['shadow']};
+        --accent: {T['accent']};
+        --accent-muted: {T['accent_muted']};
+        --widget-bg: {T['widget_bg']};
+        --widget-border: {T['widget_border']};
+        --widget-text: {T['widget_text']};
         --ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
     }}
 
@@ -520,6 +580,13 @@ st.markdown(
     section[data-testid="stSidebar"] {{
         background-color: var(--bg-sidebar) !important;
         border-right: 1px solid var(--border-subtle) !important;
+    }}
+    section[data-testid="stSidebar"] * {{
+        color: var(--text-primary) !important;
+    }}
+    section[data-testid="stSidebar"] .stCaption,
+    section[data-testid="stSidebar"] small {{
+        color: var(--text-muted) !important;
     }}
 
     .block-container {{
@@ -542,7 +609,7 @@ st.markdown(
         font-family: 'DotGothic16', monospace;
         font-size: 0.92rem;
         letter-spacing: 0.12em;
-        color: #6366f1;
+        color: var(--accent);
         text-transform: uppercase;
         margin-bottom: 0.35rem;
     }}
@@ -658,19 +725,315 @@ st.markdown(
         margin: 1.25rem 0;
     }}
 
+    /* ========== Breadcrumb Navigation ========== */
+    .breadcrumb-bar {{
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 1.2rem;
+        flex-wrap: wrap;
+        padding: 10px 0;
+    }}
+    .breadcrumb-step {{
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.03em;
+        color: {T['breadcrumb_inactive']};
+        background: transparent;
+        transition: all 0.2s ease;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }}
+    .breadcrumb-step.active {{
+        color: var(--accent);
+        background: {T['breadcrumb_active_bg']};
+        font-weight: 600;
+    }}
+    .breadcrumb-step.completed {{
+        color: {T['success']};
+    }}
+    .breadcrumb-sep {{
+        color: {T['breadcrumb_inactive']};
+        font-size: 0.7rem;
+        margin: 0 1px;
+    }}
+
+    /* ========== Streamlit Widget Overrides (Theme-Aware) ========== */
+
+    /* Text inputs, number inputs, text areas */
+    [data-testid="stTextInput"] input,
+    [data-testid="stNumberInput"] input,
+    [data-testid="stTextArea"] textarea {{
+        background-color: var(--widget-bg) !important;
+        color: var(--widget-text) !important;
+        border-color: var(--widget-border) !important;
+        border-radius: 10px !important;
+    }}
+    [data-testid="stTextInput"] input:focus,
+    [data-testid="stNumberInput"] input:focus,
+    [data-testid="stTextArea"] textarea:focus {{
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 2px var(--accent-muted) !important;
+    }}
+
+    /* Selectbox / Dropdown */
+    [data-testid="stSelectbox"] > div > div {{
+        background-color: var(--widget-bg) !important;
+        color: var(--widget-text) !important;
+        border-color: var(--widget-border) !important;
+        border-radius: 10px !important;
+    }}
+    [data-testid="stSelectbox"] [data-baseweb="select"] {{
+        background-color: var(--widget-bg) !important;
+    }}
+    [data-testid="stSelectbox"] [data-baseweb="select"] * {{
+        color: var(--widget-text) !important;
+    }}
+    /* Dropdown menu popover */
+    [data-baseweb="popover"] {{
+        background-color: var(--bg-elevated) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 12px !important;
+        box-shadow: var(--card-shadow) !important;
+    }}
+    [data-baseweb="popover"] li {{
+        background-color: transparent !important;
+        color: var(--text-primary) !important;
+    }}
+    [data-baseweb="popover"] li:hover {{
+        background-color: var(--accent-muted) !important;
+    }}
+    [data-baseweb="popover"] li[aria-selected="true"] {{
+        background-color: var(--accent-muted) !important;
+    }}
+
+    /* Multiselect */
+    [data-testid="stMultiSelect"] > div > div {{
+        background-color: var(--widget-bg) !important;
+        color: var(--widget-text) !important;
+        border-color: var(--widget-border) !important;
+        border-radius: 10px !important;
+    }}
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] {{
+        background-color: var(--accent-muted) !important;
+        color: var(--text-primary) !important;
+        border-radius: 6px !important;
+    }}
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] span {{
+        color: var(--text-primary) !important;
+    }}
+
+    /* Slider */
+    [data-testid="stSlider"] > div {{
+        color: var(--text-primary) !important;
+    }}
+    [data-testid="stSlider"] [data-baseweb="slider"] div[role="slider"] {{
+        background-color: var(--accent) !important;
+        border-color: var(--accent) !important;
+    }}
+    [data-testid="stSlider"] [data-baseweb="slider"] div[data-testid="stThumbValue"] {{
+        color: {T['text_on_accent']} !important;
+    }}
+
+    /* Radio */
+    [data-testid="stRadio"] label {{
+        color: var(--text-primary) !important;
+    }}
+
+    /* Checkbox / Toggle */
+    [data-testid="stCheckbox"] label span {{
+        color: var(--text-primary) !important;
+    }}
+
+    /* File uploader */
+    [data-testid="stFileUploader"] {{
+        background-color: var(--bg-surface) !important;
+        border-color: var(--border-subtle) !important;
+        border-radius: 14px !important;
+    }}
+    [data-testid="stFileUploader"] section {{
+        background-color: var(--bg-surface) !important;
+        border-color: var(--border-subtle) !important;
+    }}
+    [data-testid="stFileUploader"] * {{
+        color: var(--text-secondary) !important;
+    }}
+
+    /* DataFrame / Table */
+    [data-testid="stDataFrame"] {{
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+    }}
+
+    /* Tabs */
+    [data-testid="stTabs"] button {{
+        color: var(--text-muted) !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.88rem !important;
+    }}
+    [data-testid="stTabs"] button[aria-selected="true"] {{
+        color: var(--accent) !important;
+        border-bottom-color: var(--accent) !important;
+    }}
+
+    /* Expander */
+    [data-testid="stExpander"] {{
+        background-color: var(--bg-surface) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 12px !important;
+    }}
+    [data-testid="stExpander"] summary {{
+        color: var(--text-primary) !important;
+    }}
+    [data-testid="stExpander"] summary:hover {{
+        color: var(--accent) !important;
+    }}
+    [data-testid="stExpander"] [data-testid="stExpanderDetails"] {{
+        color: var(--text-secondary) !important;
+    }}
+
+    /* Download button */
+    [data-testid="stDownloadButton"] button {{
+        background-color: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 10px !important;
+    }}
+    [data-testid="stDownloadButton"] button:hover {{
+        border-color: var(--accent) !important;
+        background-color: var(--accent-muted) !important;
+    }}
+
+    /* Primary buttons */
+    button[kind="primary"], .stButton button[kind="primary"] {{
+        background-color: var(--accent) !important;
+        color: {T['text_on_accent']} !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+    }}
+    button[kind="primary"]:hover {{
+        opacity: 0.9 !important;
+    }}
+
+    /* Secondary buttons */
+    .stButton button:not([kind="primary"]) {{
+        background-color: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 10px !important;
+    }}
+    .stButton button:not([kind="primary"]):hover {{
+        border-color: var(--accent) !important;
+        background-color: var(--accent-muted) !important;
+    }}
+
+    /* Toast / notification */
+    [data-testid="stToast"] {{
+        background-color: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-subtle) !important;
+    }}
+
+    /* Metric */
+    [data-testid="stMetric"] {{
+        color: var(--text-primary) !important;
+    }}
+    [data-testid="stMetric"] label {{
+        color: var(--text-muted) !important;
+    }}
+
+    /* Labels / captions */
+    .stCaption, [data-testid="stCaptionContainer"] {{
+        color: var(--text-muted) !important;
+    }}
+    label, .stMarkdown label {{
+        color: var(--text-secondary) !important;
+    }}
+
+    /* Help tooltip icon */
+    [data-testid="stTooltipIcon"] {{
+        color: var(--text-muted) !important;
+    }}
+
+    /* Spinner */
+    .stSpinner > div {{
+        border-top-color: var(--accent) !important;
+    }}
+
+    /* Alerts (success, warning, error, info) */
+    [data-testid="stAlert"] {{
+        border-radius: 10px !important;
+    }}
+
+    /* Focus rings for accessibility */
+    *:focus-visible {{
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 2px !important;
+    }}
+
+    /* Beginner info box */
+    .beginner-tip {{
+        background: var(--accent-muted);
+        border: 1px solid var(--border-subtle);
+        border-left: 3px solid var(--accent);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin: 8px 0 16px 0;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.55;
+    }}
+    .beginner-tip strong {{
+        color: var(--text-primary);
+    }}
+
+    /* ========== Responsive ========== */
     @media (max-width: 1024px) {{
         .block-container {{ padding: 1.2rem 1.1rem 2.5rem 1.1rem !important; }}
         .hero-h1 {{ font-size: 1.75rem; }}
+        .breadcrumb-bar {{ gap: 2px; }}
+        .breadcrumb-step {{ padding: 4px 8px; font-size: 0.65rem; }}
     }}
     @media (max-width: 640px) {{
         .legend-grid {{ grid-template-columns: 1fr; }}
         .hero-h1 {{ font-size: 1.45rem; }}
         .bento-num {{ font-size: 1.8rem; }}
+        .breadcrumb-bar {{ display: none; }}
     }}
 </style>
 """,
     unsafe_allow_html=True,
 )
+
+
+# ==========================================
+# 6. BREADCRUMB NAVIGATION BAR
+# ==========================================
+def render_breadcrumb(current_idx):
+    """Render a horizontal breadcrumb progress bar showing all stages."""
+    items = []
+    for i, (stage, icon) in enumerate(zip(STAGES, STAGE_ICONS)):
+        short = stage.split(" · ")[1] if " · " in stage else stage
+        if i < current_idx:
+            cls = "breadcrumb-step completed"
+            prefix = "✓"
+        elif i == current_idx:
+            cls = "breadcrumb-step active"
+            prefix = icon
+        else:
+            cls = "breadcrumb-step"
+            prefix = icon
+        items.append(f'<span class="{cls}">{prefix} {short}</span>')
+        if i < len(STAGES) - 1:
+            items.append('<span class="breadcrumb-sep">›</span>')
+    st.markdown(f'<div class="breadcrumb-bar fade-in">{"".join(items)}</div>', unsafe_allow_html=True)
 
 
 def render_step_footer(current_idx):
@@ -679,7 +1042,7 @@ def render_step_footer(current_idx):
     b1, b2, b3 = st.columns([1, 1.5, 1])
     with b1:
         if current_idx > 0:
-            if st.button("← Back", use_container_width=True, key=f"back_{current_idx}"):
+            if st.button("\u2190 Back", use_container_width=True, key=f"back_{current_idx}"):
                 st.session_state.stage_idx = current_idx - 1
                 st.rerun()
     with b2:
@@ -702,7 +1065,7 @@ def render_step_footer(current_idx):
             st.toast("Analysis snapshot saved to Recent Analyses!")
     with b3:
         if current_idx < len(STAGES) - 1:
-            if st.button("Next Stage →", type="primary", use_container_width=True, key=f"next_{current_idx}"):
+            if st.button("Next Stage \u2192", type="primary", use_container_width=True, key=f"next_{current_idx}"):
                 st.session_state.stage_idx = current_idx + 1
                 st.rerun()
 
@@ -711,8 +1074,9 @@ def render_step_footer(current_idx):
 # STAGE 1: DASHBOARD OVERVIEW
 # ==========================================
 if st.session_state.stage_idx == 0:
+    render_breadcrumb(0)
     st.markdown(
-        """
+        r"""
     <div class="hero-wrap fade-in">
         <div class="hero-eyebrow">STEP 01 // WORKSPACE OVERVIEW</div>
         <h1 class="hero-h1">AI-Powered Clustering &amp; Manifold Analytics</h1>
@@ -724,6 +1088,26 @@ if st.session_state.stage_idx == 0:
     """,
         unsafe_allow_html=True,
     )
+
+    # Getting Started section (Beginner friendly)
+    if not st.session_state.expert_mode:
+        with st.expander("🚀 **Getting Started — New here? Read this first!**", expanded=False):
+            st.markdown(
+                """
+**Welcome to MANIFOLD!** This platform helps you discover hidden patterns in your data using AI-powered clustering and visualization.
+
+**Here's how it works in 4 simple steps:**
+
+1. **Upload your data** (or use the built-in student grades dataset to explore)
+2. **Preprocess** — we'll help you clean and prepare your data automatically
+3. **Run clustering** — the AI groups similar records together
+4. **Explore results** — interactive charts, AI explanations, and downloadable reports
+
+**No coding or machine learning experience required.** The app guides you through each step with clear explanations.
+
+> **Tip:** Use the sidebar on the left to jump to any step, or click "Start New Analysis" below to begin!
+                """
+            )
 
     n_clusters_active = len([c for c in np.unique(st.session_state.cluster_labels) if c != -1])
     k1, k2, k3, k4, k5 = st.columns(5)
@@ -750,7 +1134,7 @@ if st.session_state.stage_idx == 0:
     st.markdown("<div style='height: 0.75rem'></div>", unsafe_allow_html=True)
     cta1, cta2, cta3 = st.columns([1.4, 1.4, 1.2])
     with cta1:
-        if st.button("Start New Analysis →", type="primary", use_container_width=True):
+        if st.button("Start New Analysis \u2192", type="primary", use_container_width=True):
             st.session_state.stage_idx = 1
             st.rerun()
     with cta2:
@@ -763,6 +1147,8 @@ if st.session_state.stage_idx == 0:
             st.rerun()
 
     st.markdown('<div class="sec-title">RECENT ANALYSES &amp; SAVED SNAPSHOTS</div>', unsafe_allow_html=True)
+    if not st.session_state.expert_mode:
+        st.caption("Your analysis history is saved here. Each row represents a different clustering run you've performed.")
     recent_df = pd.DataFrame(st.session_state.saved_analyses)
     st.dataframe(recent_df, use_container_width=True, hide_index=True)
 
@@ -771,8 +1157,9 @@ if st.session_state.stage_idx == 0:
 # STAGE 2: DATA UPLOAD
 # ==========================================
 elif st.session_state.stage_idx == 1:
+    render_breadcrumb(1)
     st.markdown(
-        """
+        r"""
     <div class="hero-wrap fade-in">
         <div class="hero-eyebrow">STEP 02 // DATA INGESTION</div>
         <h1 class="hero-h1">Upload your dataset or use the built-in sample.</h1>
@@ -784,12 +1171,18 @@ elif st.session_state.stage_idx == 1:
         unsafe_allow_html=True,
     )
 
+    if not st.session_state.expert_mode:
+        st.markdown(
+            '<div class="beginner-tip"><strong>What to do:</strong> Upload a CSV or Excel file with your data, or click "Reset to Sample Dataset" to try the built-in student grades dataset. Your file needs at least 2 numeric columns (like test scores, measurements, etc.).</div>',
+            unsafe_allow_html=True,
+        )
+
     up_col, sample_col = st.columns([2, 1], gap="large")
     with up_col:
         uploaded = st.file_uploader(
             "Drag and drop CSV or Excel file here",
             type=["csv", "xlsx", "xls"],
-            help="Supported formats: .csv, .xlsx, .xls",
+            help="Supported formats: .csv, .xlsx, .xls — Your file should have numeric columns for analysis.",
         )
         if uploaded is not None:
             try:
@@ -807,7 +1200,7 @@ elif st.session_state.stage_idx == 1:
                         st.session_state.file_size_kb = round(len(uploaded.getvalue()) / 1024, 2)
                         default_feats = [c for c in num_cols if "id" not in c.lower()]
                         st.session_state.selected_features = default_feats if len(default_feats) >= 2 else num_cols
-                        st.success(f"Loaded `{uploaded.name}` ({df_new.shape[0]} rows × {df_new.shape[1]} columns).")
+                        st.success(f"Loaded `{uploaded.name}` ({df_new.shape[0]} rows \u00d7 {df_new.shape[1]} columns).")
             except ImportError:
                 st.error("Excel support requires `openpyxl`. Install it via `pip install openpyxl` or upload a `.csv` file.")
             except Exception as exc:
@@ -815,15 +1208,15 @@ elif st.session_state.stage_idx == 1:
 
     with sample_col:
         st.markdown(
-            """
+            r"""
         <div class="bento">
             <div class="bento-label">BUILT-IN DATASET</div>
-            <div class="bento-meta">Load the 100-student, 8-subject academic gradebook (`student_grades.csv`).</div>
+            <div class="bento-meta">Load the 100-student, 8-subject academic gradebook (<code>student_grades.csv</code>). Great for exploring how the platform works.</div>
         </div>
         """,
             unsafe_allow_html=True,
         )
-        if st.button("Reset to Sample Dataset", use_container_width=True):
+        if st.button("Reset to Sample Dataset", use_container_width=True, help="Load the built-in 100-student, 8-subject dataset to explore the platform."):
             sample_df = load_sample_dataset()
             st.session_state.raw_df = sample_df
             st.session_state.dataset_name = "student_grades.csv (Sample)"
@@ -846,6 +1239,8 @@ elif st.session_state.stage_idx == 1:
             )
 
     st.markdown('<div class="sec-title">DATASET PREVIEW (FIRST 20 ROWS)</div>', unsafe_allow_html=True)
+    if not st.session_state.expert_mode:
+        st.caption("Here's a quick look at your data. Scroll right to see more columns.")
     st.dataframe(raw.head(20), use_container_width=True)
     render_step_footer(1)
 
@@ -854,8 +1249,9 @@ elif st.session_state.stage_idx == 1:
 # STAGE 3: DATA PREPROCESSING
 # ==========================================
 elif st.session_state.stage_idx == 2:
+    render_breadcrumb(2)
     st.markdown(
-        """
+        r"""
     <div class="hero-wrap fade-in">
         <div class="hero-eyebrow">STEP 03 // DATA PREPROCESSING</div>
         <h1 class="hero-h1">Audit quality, select features, and scale values.</h1>
@@ -866,6 +1262,12 @@ elif st.session_state.stage_idx == 2:
     """,
         unsafe_allow_html=True,
     )
+
+    if not st.session_state.expert_mode:
+        st.markdown(
+            '<div class="beginner-tip"><strong>What happens here:</strong> We clean your data and prepare it for analysis. Missing values are handled, duplicates removed, and numbers are scaled so that every feature is treated equally. The recommended defaults work great for most datasets.</div>',
+            unsafe_allow_html=True,
+        )
 
     raw = st.session_state.raw_df
     missing_total = int(raw.isnull().sum().sum())
@@ -889,19 +1291,29 @@ elif st.session_state.stage_idx == 2:
             "Select Numeric Features for Analysis (minimum 2)",
             options=num_cols,
             default=[f for f in st.session_state.selected_features if f in num_cols] or num_cols[:2],
+            help="Pick the numeric columns you want to include in the clustering analysis. Each column becomes a 'dimension' in the analysis.",
         )
-        missing_opt = st.selectbox(
-            "Missing Value Handling",
-            ["Drop rows with missing values", "Mean imputation", "Median imputation"],
-            index=["Drop rows with missing values", "Mean imputation", "Median imputation"].index(st.session_state.missing_strategy),
-        )
-        scale_opt = st.selectbox(
-            "Feature Scaling",
-            ["StandardScaler (Z-Score)", "MinMaxScaler (0–1)", "None (Raw Values)"],
-            index=["StandardScaler (Z-Score)", "MinMaxScaler (0–1)", "None (Raw Values)"].index(st.session_state.scaling_method),
-            help="StandardScaler centers features to mean=0 and std=1 so high-variance columns do not dominate distances.",
-        )
-        drop_dups = st.checkbox("Remove duplicate rows", value=st.session_state.drop_duplicates)
+
+        if st.session_state.expert_mode:
+            missing_opt = st.selectbox(
+                "Missing Value Handling",
+                ["Drop rows with missing values", "Mean imputation", "Median imputation"],
+                index=["Drop rows with missing values", "Mean imputation", "Median imputation"].index(st.session_state.missing_strategy),
+                help="How to handle rows with missing data: drop them, fill with column average (mean), or fill with column midpoint (median).",
+            )
+            scale_opt = st.selectbox(
+                "Feature Scaling",
+                ["StandardScaler (Z-Score)", "MinMaxScaler (0\u20131)", "None (Raw Values)"],
+                index=["StandardScaler (Z-Score)", "MinMaxScaler (0\u20131)", "None (Raw Values)"].index(st.session_state.scaling_method),
+                help="StandardScaler centers features to mean=0 and std=1 so high-variance columns do not dominate distances. MinMaxScaler squeezes values into 0\u20131 range.",
+            )
+            drop_dups = st.checkbox("Remove duplicate rows", value=st.session_state.drop_duplicates, help="Remove exact duplicate rows from the dataset before analysis.")
+        else:
+            # Beginner mode: use recommended defaults
+            missing_opt = st.session_state.missing_strategy
+            scale_opt = st.session_state.scaling_method
+            drop_dups = st.session_state.drop_duplicates
+            st.info(f"Using recommended settings: **{scale_opt}**, {missing_opt.lower()}, duplicates {'removed' if drop_dups else 'kept'}. Switch to Advanced Mode for custom options.")
 
     with c_right:
         dtype_df = pd.DataFrame(
@@ -912,6 +1324,8 @@ elif st.session_state.stage_idx == 2:
             }
         )
         st.markdown('<div class="sec-title">SCHEMA &amp; DATA TYPES</div>', unsafe_allow_html=True)
+        if not st.session_state.expert_mode:
+            st.caption("Each column's data type and missing value count.")
         st.dataframe(dtype_df, use_container_width=True, hide_index=True, height=260)
 
     if len(feats) < 2:
@@ -931,7 +1345,7 @@ elif st.session_state.stage_idx == 2:
         if scale_opt == "StandardScaler (Z-Score)":
             scaler_obj = StandardScaler()
             x_mat = scaler_obj.fit_transform(df_clean[feats].values)
-        elif scale_opt == "MinMaxScaler (0–1)":
+        elif scale_opt == "MinMaxScaler (0\u20131)":
             scaler_obj = MinMaxScaler()
             x_mat = scaler_obj.fit_transform(df_clean[feats].values)
         else:
@@ -943,8 +1357,8 @@ elif st.session_state.stage_idx == 2:
         <div class="bento">
             <div class="bento-label">PREPROCESSING SUMMARY</div>
             <div class="bento-meta">
-                Records: <strong>{len(raw)} → {len(df_clean)}</strong> &nbsp;·&nbsp;
-                Features: <strong>{len(feats)}</strong> ({', '.join(feats)}) &nbsp;·&nbsp;
+                Records: <strong>{len(raw)} \u2192 {len(df_clean)}</strong> &nbsp;\u00b7&nbsp;
+                Features: <strong>{len(feats)}</strong> ({', '.join(feats)}) &nbsp;\u00b7&nbsp;
                 Scaling: <strong>{scale_opt}</strong>
             </div>
         </div>
@@ -952,7 +1366,7 @@ elif st.session_state.stage_idx == 2:
             unsafe_allow_html=True,
         )
 
-        if st.button("Continue to Analysis →", type="primary", use_container_width=True):
+        if st.button("Continue to Analysis \u2192", type="primary", use_container_width=True):
             st.session_state.selected_features = feats
             st.session_state.missing_strategy = missing_opt
             st.session_state.scaling_method = scale_opt
@@ -970,8 +1384,9 @@ elif st.session_state.stage_idx == 2:
 # STAGE 4: CLUSTERING CONFIGURATION
 # ==========================================
 elif st.session_state.stage_idx == 3:
+    render_breadcrumb(3)
     st.markdown(
-        """
+        r"""
     <div class="hero-wrap fade-in">
         <div class="hero-eyebrow">STEP 04 // CLUSTERING CONFIGURATION</div>
         <h1 class="hero-h1">Select a clustering algorithm and tune parameters.</h1>
@@ -983,27 +1398,47 @@ elif st.session_state.stage_idx == 3:
         unsafe_allow_html=True,
     )
 
+    if not st.session_state.expert_mode:
+        st.markdown(
+            '<div class="beginner-tip"><strong>What is clustering?</strong> Clustering is a way to automatically group similar records together. For example, students with similar grade patterns will be placed in the same group. The algorithm finds these groups for you \u2014 you just pick how many groups you want.</div>',
+            unsafe_allow_html=True,
+        )
+
     cfg_l, cfg_r = st.columns([1.2, 1], gap="large")
     with cfg_l:
         algo = st.selectbox(
             "Clustering Algorithm",
             ["K-Means", "DBSCAN", "Hierarchical"],
             index=["K-Means", "DBSCAN", "Hierarchical"].index(st.session_state.algo_used),
+            help="K-Means is the most common and easiest to understand. DBSCAN finds clusters of varying shapes. Hierarchical builds nested groupings.",
         )
         params = {}
         if algo == "K-Means":
-            params["k"] = st.slider("Number of Clusters (k)", 2, 10, st.session_state.algo_params.get("k", 4), help="Recommended default for student_grades.csv: k = 4.")
+            if st.session_state.expert_mode:
+                params["k"] = st.slider("Number of Clusters (k)", 2, 10, st.session_state.algo_params.get("k", 4), help="How many groups to split the data into. Start with 3\u20135 for most datasets.")
+            else:
+                params["k"] = st.slider("Number of Groups", 2, 10, st.session_state.algo_params.get("k", 4), help="How many groups to split the data into. 4 is a good starting point for most datasets.")
             param_label = f"K-Means (k={params['k']})"
         elif algo == "DBSCAN":
-            params["eps"] = st.slider("Neighborhood Radius (eps)", 0.2, 3.5, float(st.session_state.algo_params.get("eps", 1.2)), 0.1, help="Maximum distance between two samples to be considered neighbors.")
-            params["min_samples"] = st.slider("Minimum Samples per Core Point", 2, 15, int(st.session_state.algo_params.get("min_samples", 4)), help="Minimum points required to form a dense region.")
+            if st.session_state.expert_mode:
+                params["eps"] = st.slider("Neighborhood Radius (eps)", 0.2, 3.5, float(st.session_state.algo_params.get("eps", 1.2)), 0.1, help="Maximum distance between two samples to be considered neighbors. Smaller = tighter clusters.")
+                params["min_samples"] = st.slider("Minimum Samples per Core Point", 2, 15, int(st.session_state.algo_params.get("min_samples", 4)), help="Minimum points required to form a dense region. Higher = fewer but denser clusters.")
+            else:
+                params["eps"] = 1.2
+                params["min_samples"] = 4
+                st.info("Using recommended DBSCAN defaults (eps=1.2, min_samples=4). Switch to Advanced Mode to customize.")
             param_label = f"DBSCAN (eps={params['eps']}, min={params['min_samples']})"
         else:
-            params["k"] = st.slider("Number of Clusters (k)", 2, 10, st.session_state.algo_params.get("k", 4))
-            params["linkage"] = st.selectbox("Linkage Criterion", ["ward", "complete", "average"], help="'ward' minimizes intra-cluster variance.")
+            if st.session_state.expert_mode:
+                params["k"] = st.slider("Number of Clusters (k)", 2, 10, st.session_state.algo_params.get("k", 4), help="How many groups to form from the hierarchy.")
+                params["linkage"] = st.selectbox("Linkage Criterion", ["ward", "complete", "average"], help="'ward' minimizes intra-cluster variance and usually gives the best results.")
+            else:
+                params["k"] = st.slider("Number of Groups", 2, 10, st.session_state.algo_params.get("k", 4), help="How many groups to form. 4 is a good starting point.")
+                params["linkage"] = "ward"
+                st.info("Using recommended linkage: 'ward'. Switch to Advanced Mode for other options.")
             param_label = f"Hierarchical (k={params['k']}, {params['linkage']})"
 
-        if st.button("Run Clustering →", type="primary", use_container_width=True):
+        if st.button("Run Clustering \u2192", type="primary", use_container_width=True):
             with st.spinner(f"Running {param_label}..."):
                 x_mat = st.session_state.x_matrix
                 df_proc = st.session_state.proc_df
@@ -1035,11 +1470,12 @@ elif st.session_state.stage_idx == 3:
 
     with cfg_r:
         info = ALGO_INFO[algo]
+        desc_text = info["beginner"] if not st.session_state.expert_mode else info["summary"]
         st.markdown(
             f"""
         <div class="bento">
-            <div class="bento-label">HOW {algo.upper()} WORKS</div>
-            <div class="bento-meta">{info['summary']}</div>
+            <div class="bento-label">{"SIMPLE EXPLANATION" if not st.session_state.expert_mode else "HOW " + algo.upper() + " WORKS"}</div>
+            <div class="bento-meta">{desc_text}</div>
             <div class="hairline"></div>
             <div class="bento-label">RECOMMENDED USE CASE</div>
             <div class="bento-meta">{info['best_for']}</div>
@@ -1055,8 +1491,9 @@ elif st.session_state.stage_idx == 3:
 # STAGE 5: VISUALIZATION & ANALYSIS
 # ==========================================
 elif st.session_state.stage_idx == 4:
+    render_breadcrumb(4)
     st.markdown(
-        """
+        r"""
     <div class="hero-wrap fade-in">
         <div class="hero-eyebrow">STEP 05 // VISUALIZATION &amp; ANALYSIS</div>
         <h1 class="hero-h1">Explore interactive PCA, t-SNE, and UMAP manifolds.</h1>
@@ -1067,6 +1504,12 @@ elif st.session_state.stage_idx == 4:
     """,
         unsafe_allow_html=True,
     )
+
+    if not st.session_state.expert_mode:
+        st.markdown(
+            '<div class="beginner-tip"><strong>What am I looking at?</strong> These charts show your data in a simplified view. Each dot is one record from your dataset. Dots that are <strong>close together</strong> are similar, and dots that are <strong>far apart</strong> are different. Colors represent the groups (clusters) the algorithm found.</div>',
+            unsafe_allow_html=True,
+        )
 
     df_proc = st.session_state.proc_df.copy()
     x_mat = st.session_state.x_matrix
@@ -1090,28 +1533,45 @@ elif st.session_state.stage_idx == 4:
             alg_opts = ["PCA (Linear)", "t-SNE (Non-Linear)"] + (["UMAP (Manifold)"] if HAS_UMAP else [])
             v1, v2, v3 = st.columns([1.2, 1.2, 0.9])
             with v1:
-                emb_method = st.selectbox("Projection", alg_opts)
+                emb_method = st.selectbox(
+                    "Projection",
+                    alg_opts,
+                    help="PCA: fast, preserves global variance. t-SNE: reveals local neighborhoods. UMAP: balances global and local structure." if st.session_state.expert_mode else "Choose how to display your data. PCA is simplest and fastest. t-SNE shows tighter groups.",
+                )
             with v2:
-                color_opt = st.selectbox("Color By", ["Cluster"] + feats)
+                color_opt = st.selectbox(
+                    "Color By",
+                    ["Cluster"] + feats,
+                    help="Color the data points by their cluster assignment or by a specific feature value.",
+                )
             with v3:
-                dims = st.selectbox("Dimensions", ["2D Plane", "3D Space"])
+                dims = st.selectbox(
+                    "Dimensions",
+                    ["2D Plane", "3D Space"],
+                    help="2D is easier to read; 3D lets you rotate and explore an extra dimension.",
+                )
 
             n_comp = 3 if dims == "3D Space" else 2
             perp, lr_c, u_nb, u_md = 20, "auto", 15, 0.1
-            if emb_method == "t-SNE (Non-Linear)":
-                tc1, tc2 = st.columns(2)
-                perp = tc1.slider("Perplexity", 5, 45, 20, 5)
-                lr_c = tc2.selectbox("Learning Rate", ["auto", "50", "200"])
-            elif emb_method == "UMAP (Manifold)":
-                uc1, uc2 = st.columns(2)
-                u_nb = uc1.slider("n_neighbors", 5, 45, 15, 5)
-                u_md = uc2.slider("min_dist", 0.05, 0.50, 0.10, 0.05)
+            if st.session_state.expert_mode:
+                if emb_method == "t-SNE (Non-Linear)":
+                    tc1, tc2 = st.columns(2)
+                    perp = tc1.slider("Perplexity", 5, 45, 20, 5, help="Controls how many neighbors each point considers. Lower = more local focus, higher = more global view.")
+                    lr_c = tc2.selectbox("Learning Rate", ["auto", "50", "200"], help="How fast the algorithm converges. 'auto' works well in most cases.")
+                elif emb_method == "UMAP (Manifold)":
+                    uc1, uc2 = st.columns(2)
+                    u_nb = uc1.slider("n_neighbors", 5, 45, 15, 5, help="Number of neighbors to consider. More neighbors = more global structure preserved.")
+                    u_md = uc2.slider("min_dist", 0.05, 0.50, 0.10, 0.05, help="How tightly points are packed. Smaller = tighter clusters in the visualization.")
 
-            active_clusters = st.multiselect(
-                "Filter Visible Clusters",
-                options=list(color_map.keys()),
-                default=list(color_map.keys()),
-            )
+            if st.session_state.expert_mode:
+                active_clusters = st.multiselect(
+                    "Filter Visible Clusters",
+                    options=list(color_map.keys()),
+                    default=list(color_map.keys()),
+                    help="Show or hide specific clusters from the chart.",
+                )
+            else:
+                active_clusters = list(color_map.keys())
 
             with st.spinner("Rendering projection..."):
                 coords, axes_lbls, trust_val, loadings = compute_embedding(
@@ -1142,7 +1602,7 @@ elif st.session_state.stage_idx == 4:
                 fig.update_traces(marker=dict(size=10, opacity=0.9, line=dict(width=1, color=T["marker_edge"])))
 
                 if emb_method == "PCA (Linear)" and loadings is not None and loadings.shape[1] >= 2:
-                    if st.checkbox("Overlay PCA Feature Vectors", value=False):
+                    if st.session_state.expert_mode and st.checkbox("Overlay PCA Feature Vectors", value=False, help="Show arrows indicating which features contribute most to each principal component."):
                         vecs = loadings * 4.0
                         for i, fname in enumerate(feats):
                             vx, vy = float(vecs[i, 0]), float(vecs[i, 1])
@@ -1167,14 +1627,17 @@ elif st.session_state.stage_idx == 4:
                 yaxis=dict(title=dict(text=y_lbl, font=dict(size=14, color=T["text_primary"])), tickfont=dict(size=12, color=T["text_muted"]), showgrid=True, gridcolor=T["grid"], zerolinecolor=T["zero"]),
                 scene=dict(
                     bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(title=dict(text=x_lbl, font=dict(size=13)), showbackground=False, gridcolor=T["grid"]),
-                    yaxis=dict(title=dict(text=y_lbl, font=dict(size=13)), showbackground=False, gridcolor=T["grid"]),
-                    zaxis=dict(title=dict(text=z_lbl, font=dict(size=13)), showbackground=False, gridcolor=T["grid"]),
+                    xaxis=dict(title=dict(text=x_lbl, font=dict(size=13, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
+                    yaxis=dict(title=dict(text=y_lbl, font=dict(size=13, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
+                    zaxis=dict(title=dict(text=z_lbl, font=dict(size=13, color=T["text_primary"])), showbackground=False, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
                 ),
                 legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="left", x=0, title=None, font=dict(size=12, color=T["text_primary"])),
             )
             st.session_state.last_fig_html = fig.to_html(include_plotlyjs="cdn").encode("utf-8")
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True, "displaylogo": False})
+
+            if not st.session_state.expert_mode:
+                st.caption(f"**How to read this chart:** Each dot is one record. Colors show which group (cluster) it belongs to. Points close together share similar feature values. This is a {emb_method.split('(')[0].strip()} projection \u2014 it simplifies your high-dimensional data into a {dims.split()[0]} view.")
 
             # Cluster Legend & Meaning
             cards_html = ""
@@ -1193,22 +1656,27 @@ elif st.session_state.stage_idx == 4:
         with s_col:
             sil_disp = f"{st.session_state.sil_score:.3f}" if st.session_state.sil_score is not None else "N/A"
             dbi_disp = f"{st.session_state.dbi_score:.3f}" if st.session_state.dbi_score is not None else "N/A"
+
+            sil_help = "Measures how similar each point is to its own cluster vs. other clusters. Higher is better." if not st.session_state.expert_mode else "Range [-1, 1]. Higher = sharper cluster separation. >0.45 is strong, 0.25\u20130.45 is moderate."
+            dbi_help = "Measures how well-separated the clusters are. Lower is better." if not st.session_state.expert_mode else "Lower = tighter, better separated clusters. <1.0 indicates good separation."
+            trust_help = "How well the chart preserves the relationships from the original data. Closer to 1.0 is better." if not st.session_state.expert_mode else f"Neighborhood preservation in {emb_method.split()[0]}. 1.0 = perfect local fidelity."
+
             st.markdown(
                 f"""
             <div class="bento">
                 <div class="bento-label">SILHOUETTE SCORE</div>
                 <div class="bento-num">{sil_disp}</div>
-                <div class="bento-meta">Range [-1, 1] · Higher = sharper cluster separation</div>
+                <div class="bento-meta">{sil_help}</div>
             </div>
             <div class="bento">
                 <div class="bento-label">DAVIES-BOULDIN INDEX</div>
                 <div class="bento-num">{dbi_disp}</div>
-                <div class="bento-meta">Lower = tighter, better separated clusters</div>
+                <div class="bento-meta">{dbi_help}</div>
             </div>
             <div class="bento">
                 <div class="bento-label">TRUSTWORTHINESS</div>
                 <div class="bento-num">{trust_val:.3f}</div>
-                <div class="bento-meta">Neighborhood preservation in {emb_method.split()[0]}</div>
+                <div class="bento-meta">{trust_help}</div>
             </div>
             """,
                 unsafe_allow_html=True,
@@ -1216,9 +1684,13 @@ elif st.session_state.stage_idx == 4:
 
     with tab_compare:
         st.markdown('<div class="sec-title">CLUSTERING RUN COMPARISON</div>', unsafe_allow_html=True)
+        if not st.session_state.expert_mode:
+            st.caption("Compare different clustering runs side by side. Each row shows a different set of parameters you've tried.")
         st.dataframe(pd.DataFrame(st.session_state.comparison_runs), use_container_width=True, hide_index=True)
 
         st.markdown('<div class="sec-title">MEAN FEATURE PROFILE BY CLUSTER</div>', unsafe_allow_html=True)
+        if not st.session_state.expert_mode:
+            st.caption("Average values for each feature within each cluster. This shows what makes each group unique.")
         means_tbl = df_proc.groupby("Cluster_Label")[feats].mean().round(2)
         st.dataframe(means_tbl, use_container_width=True)
 
@@ -1231,20 +1703,24 @@ elif st.session_state.stage_idx == 4:
             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
             font=dict(family="JetBrains Mono, monospace", color=T["text_secondary"], size=13),
             height=380,
-            xaxis=dict(title=dict(text="Feature", font=dict(size=14, color=T["text_primary"])), showgrid=False),
-            yaxis=dict(title=dict(text="Mean Value", font=dict(size=14, color=T["text_primary"])), showgrid=True, gridcolor=T["grid"]),
-            legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="left", x=0, title=None),
+            xaxis=dict(title=dict(text="Feature", font=dict(size=14, color=T["text_primary"])), showgrid=False, tickfont=dict(color=T["text_muted"])),
+            yaxis=dict(title=dict(text="Mean Value", font=dict(size=14, color=T["text_primary"])), showgrid=True, gridcolor=T["grid"], tickfont=dict(color=T["text_muted"])),
+            legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="left", x=0, title=None, font=dict(color=T["text_primary"])),
         )
         st.plotly_chart(fig_prof, use_container_width=True, config={"displayModeBar": False})
+        if not st.session_state.expert_mode:
+            st.caption("**Reading this chart:** Each line represents a cluster. Where a line is high, that group scores above average on that feature. Where it dips, they score below average.")
 
     with tab_sim:
         st.markdown('<div class="sec-title">COUNTERFACTUAL RECORD SIMULATOR</div>', unsafe_allow_html=True)
+        if not st.session_state.expert_mode:
+            st.caption("Adjust a record's values using the sliders to see which cluster it would belong to. Great for 'what-if' scenarios!")
         if st.session_state.algo_used != "K-Means":
             st.info("Real-time nearest-centroid prediction is supported for K-Means. Switch to K-Means in Step 4 to simulate cluster transitions.")
         else:
             sim_l, sim_r = st.columns([1, 1.8], gap="large")
             with sim_l:
-                row_idx = st.selectbox("Select Record Index", list(range(len(df_proc))))
+                row_idx = st.selectbox("Select Record Index", list(range(len(df_proc))), help="Pick a row from your dataset to simulate changes.")
                 rec = df_proc.iloc[row_idx]
                 st.markdown(
                     f'<div class="bento"><div class="bento-label">CURRENT ASSIGNMENT</div><div class="bento-num" style="font-size:1.5rem;">{rec["Cluster_Label"]}</div></div>',
@@ -1259,7 +1735,7 @@ elif st.session_state.stage_idx == 4:
                     if col_min == col_max:
                         col_max = col_min + 1.0
                     target_col = sc1 if i % 2 == 0 else sc2
-                    sliders_vals.append(target_col.slider(f.upper(), col_min, col_max, float(rec[f])))
+                    sliders_vals.append(target_col.slider(f.upper(), col_min, col_max, float(rec[f]), help=f"Adjust the {f} value to see how cluster assignment changes."))
 
                 vec = np.array(sliders_vals).reshape(1, -1)
                 vec_scaled = st.session_state.scaler_obj.transform(vec) if st.session_state.scaler_obj is not None else vec
@@ -1272,7 +1748,7 @@ elif st.session_state.stage_idx == 4:
                 <div class="bento" style="margin-top:0.75rem;">
                     <div class="bento-label">SIMULATED OUTCOME</div>
                     <div style="font-size:1.3rem; font-weight:700; color:{T['text_primary']};">
-                        {rec['Cluster_Label']} → <span style="color:{color_map.get(pred_lbl, '#34d399')};">{pred_lbl}</span>
+                        {rec['Cluster_Label']} \u2192 <span style="color:{color_map.get(pred_lbl, '#34d399')};">{pred_lbl}</span>
                     </div>
                     <div class="bento-meta">{"Boundary crossed into a new cluster." if changed else "Record remains within its current cluster."}</div>
                 </div>
@@ -1287,8 +1763,9 @@ elif st.session_state.stage_idx == 4:
 # STAGE 6: AI-GENERATED INSIGHTS
 # ==========================================
 elif st.session_state.stage_idx == 5:
+    render_breadcrumb(5)
     st.markdown(
-        """
+        r"""
     <div class="hero-wrap fade-in">
         <div class="hero-eyebrow">STEP 06 // AI-GENERATED INSIGHTS</div>
         <h1 class="hero-h1">Automated cluster narrative &amp; pattern analysis.</h1>
@@ -1299,6 +1776,12 @@ elif st.session_state.stage_idx == 5:
     """,
         unsafe_allow_html=True,
     )
+
+    if not st.session_state.expert_mode:
+        st.markdown(
+            '<div class="beginner-tip"><strong>What is this page?</strong> Here the platform automatically explains what it found in your data. It describes each group, what makes them different, and suggests what to do next. No data science knowledge needed to understand these results!</div>',
+            unsafe_allow_html=True,
+        )
 
     insights = generate_ai_insights(
         st.session_state.proc_df,
@@ -1350,6 +1833,8 @@ elif st.session_state.stage_idx == 5:
         )
 
     st.markdown('<div class="sec-title">CLUSTER CHARACTERISTICS &amp; PATTERNS</div>', unsafe_allow_html=True)
+    if not st.session_state.expert_mode:
+        st.caption("Each card below describes one cluster \u2014 what it's good at, what it's low on, and how many records belong to it.")
     cols = st.columns(2)
     for idx, card in enumerate(insights["cluster_cards"]):
         c_color = "#71717a" if card["cid"] == -1 else T["colors"][idx % len(T["colors"])]
@@ -1357,7 +1842,7 @@ elif st.session_state.stage_idx == 5:
             st.markdown(
                 f"""
             <div class="bento">
-                <div class="bento-label"><span class="dot-ind" style="background:{c_color};"></span> {card['name']} ({card['pct']:.1f}% · n={card['count']})</div>
+                <div class="bento-label"><span class="dot-ind" style="background:{c_color};"></span> {card['name']} ({card['pct']:.1f}% \u00b7 n={card['count']})</div>
                 <div class="bento-meta"><strong>Strongest features:</strong> {', '.join(card['strengths'])}</div>
                 <div class="bento-meta"><strong>Lowest features:</strong> {', '.join(card['weaknesses'])}</div>
             </div>
@@ -1366,7 +1851,7 @@ elif st.session_state.stage_idx == 5:
             )
 
     st.markdown(
-        """
+        r"""
     <div class="bento">
         <div class="bento-label">RECOMMENDED NEXT STEPS</div>
         <div class="bento-meta">
@@ -1386,8 +1871,9 @@ elif st.session_state.stage_idx == 5:
 # STAGE 7: RESULTS & EXPORT
 # ==========================================
 else:
+    render_breadcrumb(6)
     st.markdown(
-        """
+        r"""
     <div class="hero-wrap fade-in">
         <div class="hero-eyebrow">STEP 07 // RESULTS &amp; EXPORT</div>
         <h1 class="hero-h1">Download datasets, interactive charts, and PDF reports.</h1>
@@ -1398,6 +1884,12 @@ else:
     """,
         unsafe_allow_html=True,
     )
+
+    if not st.session_state.expert_mode:
+        st.markdown(
+            '<div class="beginner-tip"><strong>You\'re done!</strong> Your analysis is complete. Download the results below \u2014 the CSV contains your data with cluster labels added, the PDF is a formatted report you can share, and the HTML file is an interactive chart you can open in any browser.</div>',
+            unsafe_allow_html=True,
+        )
 
     df_out = st.session_state.proc_df.copy()
     x_mat = st.session_state.x_matrix
@@ -1426,9 +1918,9 @@ else:
     <div class="bento fade-in">
         <div class="bento-label">FINAL ANALYSIS SUMMARY</div>
         <div class="bento-meta" style="font-size:1rem;">
-            Dataset: <strong>{st.session_state.dataset_name}</strong> ({len(df_out)} rows, {len(feats)} features) &nbsp;·&nbsp;
-            Algorithm: <strong>{st.session_state.algo_used}</strong> &nbsp;·&nbsp;
-            Silhouette: <strong>{sil_str}</strong> &nbsp;·&nbsp;
+            Dataset: <strong>{st.session_state.dataset_name}</strong> ({len(df_out)} rows, {len(feats)} features) &nbsp;\u00b7&nbsp;
+            Algorithm: <strong>{st.session_state.algo_used}</strong> &nbsp;\u00b7&nbsp;
+            Silhouette: <strong>{sil_str}</strong> &nbsp;\u00b7&nbsp;
             Davies-Bouldin: <strong>{dbi_str}</strong>
         </div>
     </div>
@@ -1444,6 +1936,7 @@ else:
             file_name="manifold_clustered_results.csv",
             mime="text/csv",
             use_container_width=True,
+            help="Download your dataset with cluster labels and PCA coordinates added.",
         )
     with e2:
         pdf_bytes = generate_pdf_report(
@@ -1465,6 +1958,7 @@ else:
             file_name="manifold_analytics_report.pdf",
             mime="application/pdf",
             use_container_width=True,
+            help="Download a formatted PDF executive summary report of your analysis.",
         )
     with e3:
         if "last_fig_html" not in st.session_state:
@@ -1476,8 +1970,11 @@ else:
             file_name="manifold_visualization.html",
             mime="text/html",
             use_container_width=True,
+            help="Download an interactive HTML chart you can open in any web browser.",
         )
 
     st.markdown('<div class="sec-title">PROCESSED DATASET PREVIEW</div>', unsafe_allow_html=True)
+    if not st.session_state.expert_mode:
+        st.caption("Preview of your enriched dataset with cluster assignments and PCA coordinates added.")
     st.dataframe(df_out.head(15), use_container_width=True)
     render_step_footer(6)
