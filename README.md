@@ -1,10 +1,13 @@
 # 🎓 Academic Profile Discovery via Dimensionality Reduction & Manifold Learning
 ### *Uncovering Latent Student Aptitude Archetypes Through Linear (PCA) and Non-Linear (t-SNE / UMAP) Manifold Decomposition*
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://dimensionality-reduction-jbrr9.streamlit.app/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Jupyter](https://img.shields.io/badge/Notebooks-Jupyter%20%7C%20Colab-orange.svg?logo=jupyter&logoColor=white)](https://jupyter.org/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-v1.2%2B-F7931E.svg?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+> **🌐 Live Interactive Dashboard:** Explore the 2D/3D PCA & t-SNE manifold map, archetype radar fingerprints, and real-time student intervention simulator directly at **[dimensionality-reduction-jbrr9.streamlit.app](https://dimensionality-reduction-jbrr9.streamlit.app/)**.
 
 ---
 
@@ -297,7 +300,10 @@ pip install -r requirements.txt
 ```
 
 ### 4. Interactive Web Dashboard (Streamlit)
-Launch the interactive web application to explore projections, radar profiles, and counterfactual simulations:
+Explore the live deployed dashboard directly in your browser:
+👉 **[https://dimensionality-reduction-jbrr9.streamlit.app/](https://dimensionality-reduction-jbrr9.streamlit.app/)**
+
+Or run it locally to explore 2D/3D projections, radar fingerprints, and counterfactual simulations:
 ```bash
 streamlit run app.py
 ```
@@ -325,6 +331,7 @@ jupyter notebook
 | **Statistical Computing** | `SciPy` | Bivariate correlation coefficients ($r$), distributions, Mahalanobis distances. |
 | **Static Visualization** | `Matplotlib`, `Seaborn` | High-dpi correlation heatmaps, Scree plots, loadings bar charts, paired boxplots. |
 | **Interactive Visualization** | `Plotly Express` | Interactive 3D PCA scatter cube, 2D t-SNE student profile explorer with full hover tooltips. |
+| **Web Deployment** | `Streamlit` | Live interactive manifold explorer, radar fingerprints, and counterfactual simulator ([Live App](https://dimensionality-reduction-jbrr9.streamlit.app/)). |
 
 ---
 
