@@ -1056,8 +1056,8 @@ def render_step_footer(current_idx):
                     "rows": len(st.session_state.proc_df),
                     "features": len(st.session_state.selected_features),
                     "algo": st.session_state.algo_used,
-                    "sil": round(sil_v, 4) if sil_v is not None else "N/A",
-                    "dbi": round(dbi_v, 4) if dbi_v is not None else "N/A",
+                    "sil": round(sil_v, 4) if sil_v is not None else None,
+                    "dbi": round(dbi_v, 4) if dbi_v is not None else None,
                 },
             )
             st.toast("Analysis snapshot saved to Recent Analyses!")
@@ -1459,8 +1459,8 @@ elif st.session_state.stage_idx == 3:
                         "Algorithm": param_label,
                         "Scaling": st.session_state.scaling_method.split()[0],
                         "Clusters": n_found,
-                        "Silhouette": round(sil, 4) if sil is not None else "N/A",
-                        "Davies-Bouldin": round(dbi, 4) if dbi is not None else "N/A",
+                        "Silhouette": round(sil, 4) if sil is not None else None,
+                        "Davies-Bouldin": round(dbi, 4) if dbi is not None else None,
                     }
                 )
                 st.session_state.stage_idx = 4
