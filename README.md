@@ -79,9 +79,12 @@ flowchart TD
 ```text
 Dimensionality-Reduction/
 ├── 01_EDA.ipynb                           # Statistical profiling, correlation blocks & scaling necessity
-├── 02_PCA_Analysis.ipynb                  # Linear decomposition, Scree plots, loadings & 2D/3D projections
-├── 03_tSNE_Analysis.ipynb                 # Hyperparameter grid search, manifold learning & quantitative benchmarking
+├── 02_PCA_Analysis.ipynb                  # Linear decomposition, Scree plots, loadings, 2D biplot & reconstruction MSE
+├── 03_tSNE_Analysis.ipynb                 # Hyperparameter grid search, manifold learning & trustworthiness benchmarking
+├── app.py                                 # Interactive Streamlit dashboard with radar profiles & what-if simulator
 ├── student_grades.csv                     # Source dataset (100 student records across 8 academic subjects)
+├── requirements.txt                       # Project dependencies and minimum versions
+├── .gitignore                             # Git exclusion rules for notebooks, caches & virtual environments
 └── README.md                              # Production-grade project documentation & theoretical reference
 ```
 
@@ -205,16 +208,16 @@ To guarantee reproducible and robust manifold embeddings, we conducted a systema
 
 ### 4. Quantitative Benchmark: Linear PCA vs. Non-Linear Manifold
 
-We evaluate cluster separation by computing the **Silhouette Score** ($s \in [-1, 1]$) on the 2D projected coordinates against the ground-truth $k$-Means academic clusters ($k=4$):
+We evaluate cluster separation and topological fidelity using two complementary mathematical criteria:
+1. **Silhouette Score** ($s \in [-1, 1]$): Measures boundary sharpness and cluster compactness in the 2D projected coordinates.
+2. **Trustworthiness** ($T_{k} \in [0, 1]$, $k=15$): Quantifies local manifold preservation by measuring the degree to which low-dimensional nearest neighbors match true high-dimensional Euclidean neighborhoods (avoiding artificial neighbor artifacts).
 
-$$s_i = \frac{b(i) - a(i)}{\max(a(i), b(i))}, \quad \bar{s} = \frac{1}{N}\sum_{i=1}^N s_i$$
-
-| Dimensionality Reduction Technique | Latent Dimensions | 2D Silhouette Score | Relative Improvement | Primary Strength |
+| Dimensionality Reduction Technique | Latent Dimensions | 2D Silhouette Score | Trustworthiness ($k=15$) | Primary Strength |
 | :--- | :---: | :---: | :---: | :--- |
-| **2D PCA (PC1 vs. PC3)** | $\mathbb{R}^2$ | $0.2781$ | Baseline | Highlights STEM vs. Humanities trade-off; poor cluster isolation. |
-| **2D PCA (PC1 vs. PC2)** | $\mathbb{R}^2$ | $0.4333$ | $+55.8\%$ | Captures overall variance ($87.8\%$); linear boundaries overlap slightly. |
-| **2D t-SNE (Optimal: Perp=20, LR='auto')** | $\mathbb{R}^2$ | **$0.4852$** | **$+74.5\%$** | **Clean non-linear separation of all 4 student clusters in a single view.** |
-| **2D UMAP ($n\_neighbors=15, min\_dist=0.1$)** | $\mathbb{R}^2$ | **$0.5115$** | **$+83.9\%$** | Superior preservation of both local clusters and continuum trajectories. |
+| **2D PCA (PC1 vs. PC3)** | $\mathbb{R}^2$ | $0.2781$ | $0.8924$ | Highlights STEM vs. Humanities trade-off; poor cluster isolation. |
+| **2D PCA (PC1 vs. PC2)** | $\mathbb{R}^2$ | $0.4333$ | **$0.9804$** | Captures overall variance ($87.8\%$) with top topological fidelity; linear boundaries overlap slightly. |
+| **2D t-SNE (Optimal: Perp=20, LR='auto')** | $\mathbb{R}^2$ | **$0.4852$** | **$0.9775$** | **Clean non-linear separation of all 4 student clusters while preserving local neighborhoods.** |
+| **2D UMAP ($n\_neighbors=15, min\_dist=0.1$)** | $\mathbb{R}^2$ | **$0.5115$** | **$0.9812$** | Superior preservation of both local clusters and continuum trajectories. |
 
 ---
 
@@ -290,18 +293,24 @@ python -m venv venv
 ### 3. Install Dependencies
 ```bash
 pip install --upgrade pip
-pip install pandas numpy scikit-learn matplotlib seaborn plotly umap-learn scipy
+pip install -r requirements.txt
 ```
 
-### 4. Execute Notebooks in Sequence
-Launch JupyterLab or VS Code and run the pipeline sequentially:
+### 4. Interactive Web Dashboard (Streamlit)
+Launch the interactive web application to explore projections, radar profiles, and counterfactual simulations:
+```bash
+streamlit run app.py
+```
+
+### 5. Execute Notebooks in Sequence
+Launch JupyterLab or VS Code to step through the research notebooks:
 ```bash
 # Launch Jupyter Notebook
 jupyter notebook
 ```
 1. Open and execute **`01_EDA.ipynb`**: Comprehensive statistical distributions, collinearity proofs, and scaling audit.
-2. Open and execute **`02_PCA_Analysis.ipynb`**: Spectral decomposition, Scree plots, component loading vectors, and 2D/3D projections.
-3. Open and execute **`03_tSNE_Analysis.ipynb`**: Perplexity and learning rate sweeps, t-SNE/UMAP embeddings, and quantitative benchmark.
+2. Open and execute **`02_PCA_Analysis.ipynb`**: Spectral decomposition, Scree plots, reconstruction MSE, 2D biplot, and cluster validation.
+3. Open and execute **`03_tSNE_Analysis.ipynb`**: Perplexity and learning rate sweeps, t-SNE/UMAP embeddings, and trustworthiness benchmarking.
 
 ---
 

@@ -1,0 +1,27 @@
+# Python byte code and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment and sensitive files
+.env
+.env.local
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Output artifacts and figures
+reports/
+output/
