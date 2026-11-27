@@ -4,6 +4,7 @@ Complete 7-stage guided analytics workflow:
 Overview -> Data Upload -> Preprocessing -> Clustering -> Visualization -> AI Insights -> Export
 """
 
+import importlib.util
 from datetime import datetime
 from io import BytesIO
 import numpy as np
@@ -19,12 +20,7 @@ from sklearn.manifold import TSNE, trustworthiness
 from sklearn.metrics import davies_bouldin_score, silhouette_score
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-try:
-    import umap
-
-    HAS_UMAP = True
-except ImportError:
-    HAS_UMAP = False
+HAS_UMAP = importlib.util.find_spec("umap") is not None
 
 
 # ==========================================
@@ -212,6 +208,8 @@ def compute_embedding(x_matrix, method, n_comp, perp=20, lr="auto", n_neighbors=
         ]
         loadings = None
     else:
+        import umap
+
         safe_k = min(n_neighbors, max(2, n_samples - 1))
         model = umap.UMAP(n_neighbors=safe_k, min_dist=min_dist, n_components=eff_comp, random_state=42)
         coords = model.fit_transform(x_matrix)
